@@ -540,7 +540,7 @@ bot.onText(/\/tuansau/, async (msg) => {
   bot.sendMessage(chatId, "📅 Đang lấy lịch học tuần sau, vui lòng chờ trong giây lát ⌛...");
   try {
     const lichHoc = await getSchedule(1);
-    let message = `📅 **Lịch học tuần sau**\n------------------------------------\n`;
+    let message = `📅 **Lịch học tuần sau của bạn:**\n------------------------------------\n`;
     let hasSchedule = false;
 
     for (const [ngay, monHocs] of Object.entries(lichHoc.schedule)) {
@@ -573,7 +573,7 @@ bot.onText(/\/tuansau/, async (msg) => {
 
 bot.onText(/\/thongbao/, async (msg) => {
   const chatId = msg.chat.id;
-  bot.sendMessage(chatId, "🔔 Đang lấy thông báo, vui lòng chờ trong giây lát ⌛...");
+  bot.sendMessage(chatId, "🔔 Đang lấy danh sách thông báo, vui lòng chờ trong giây lát ⌛...");
   try {
     const notifications = await getNotifications();
     let message = "🔔 **Danh sách thông báo mới nhất:**\n------------------------------------\n";
@@ -599,7 +599,7 @@ bot.onText(/\/congtac/, async (msg) => {
     if (congTacData.length > 5) message += `📢 Còn ${congTacData.length - 5} công tác khác. Hãy truy cập vào [Portal VHU](https://portal.vhu.edu.vn/login) để biết thêm thông tin chi tiết.`;
     bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
   } catch (error) {
-    bot.sendMessage(chatId, `❌ Lỗi lấy công tác xã hội: ${error.message}`);
+    bot.sendMessage(chatId, `❌ Lỗi lấy danh sách công tác xã hội: ${error.message}`);
   }
 });
 
