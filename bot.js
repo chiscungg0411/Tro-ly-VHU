@@ -472,7 +472,7 @@ async function getExamSchedule() {
         return { exams: [], year: "Không rõ", semester: "Không rõ" }; // Trả về mảng rỗng nếu không có lịch
       }
 
-      const exams = Array.from(rows).map((row) => {
+      let exams = Array.from(rows).map((row) => {
         const cols = row.querySelectorAll("td");
         return {
           subject: cols[0]?.textContent.trim() || "Không rõ",
@@ -486,6 +486,18 @@ async function getExamSchedule() {
         };
       });
 
+      // Lọc các môn có cả phòng thi và địa điểm (loại bỏ nếu một trong hai là "Chưa cập nhật")
+      exams = exams.filter(exam => exam.room !== "Chưa cập nhật" && exam.location !== "Chưa cập nhật");
+
+      // Sắp xếp theo ngày thi (DD/MM/YYYY) từ cũ đến mới
+      exams.sort((a, b) => {
+        const [dayA, monthA, yearA] = a.date.split("/").map(Number);
+        const [dayB, monthB, yearB] = b.date.split("/").map(Number);
+        const dateA = new Date(yearA, monthA - 1, dayA);
+        const dateB = new Date(yearB, monthB - 1, dayB);
+        return dateA - dateB;
+      });
+
       // Lấy thông tin năm học và học kỳ (nếu có)
       const year = document.querySelector("input[name='NamHienTai']")?.value || "Không rõ";
       const semester = document.querySelector(".MuiSelect-select")?.textContent.trim() || "Không rõ";
@@ -493,7 +505,7 @@ async function getExamSchedule() {
       return { exams, year, semester };
     });
 
-    console.log("✅ Đã lấy dữ liệu lịch thi:", examData);
+    console.log("✅ Đã lấy và lọc dữ liệu lịch thi:", examData);
     return examData;
   } catch (error) {
     console.error("❌ Lỗi trong getExamSchedule:", error.message);
@@ -522,6 +534,7 @@ async function setupBotMenu() {
       { command: "tuansau", description: "🗓️ Lấy lịch học tuần sau" },
       { command: "thongbao", description: "🔔 Lấy danh sách thông báo" },
       { command: "congtac", description: "📝 Lấy danh sách công tác" },
+      { command: "lichthi", description: "📝 Lấy lịch thi học kỳ này" },
       { command: "tinchi", description: "📊 Tổng số tín chỉ và điểm TB" },
       { command: "taichinh", description: "💵 Thông tin tài chính sinh viên" }
     ]);
@@ -679,7 +692,7 @@ bot.onText(/\/tinchi/, async (msg) => {
     let message = `📊 **Tổng số tín chỉ và điểm trung bình của bạn:**\n------------------------------------\n`;
     message += `🎓 Số tín chỉ đã đạt: **${totalCredits} tín chỉ**\n`;
     message += `📈 Điểm TB chung (Hệ 10): **${avgScore}**\n`;
-    message += `ℹ️ Hãy truy cập [Portal VHU](https://portal.vhu.edu.vn/) để biết thêm thông tin chi tiết.`;
+    message += `ℹ️ Hãy truy cập vào [Portal VHU](https://portal.vhu.edu.vn/) để biết thêm thông tin chi tiết.`;
     bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
   } catch (error) {
     bot.sendMessage(chatId, `❌ Lỗi lấy dữ liệu: ${error.message}`);
@@ -730,7 +743,7 @@ bot.onText(/\/lichthi/, async (msg) => {
       });
     }
 
-    message += `ℹ️ Dữ liệu từ [Portal VHU](https://portal.vhu.edu.vn/).`;
+    message += `ℹ️ Hãy truy cập vào [Portal VHU](https://portal.vhu.edu.vn/) để biết thêm thông tin chi tiết.`;
     bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
   } catch (error) {
     bot.sendMessage(chatId, `❌ Lỗi lấy lịch thi: ${error.message}`);
