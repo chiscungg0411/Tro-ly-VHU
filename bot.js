@@ -456,32 +456,20 @@ async function getExamSchedule() {
     console.log(`🌐 URL sau khi truy cập lịch thi: ${page.url()}`);
 
     console.log("⏳ Đang chờ bảng lịch thi tải...");
-    await page.waitForSelector(".MuiCardContent-root", { timeout: 180000 }).catch(async () => {
+    await page.waitForSelector(".MuiTableContainer-root.psc-table", { timeout: 180000 }).catch(async () => {
       const content = await page.content();
-      throw new Error(`Không tìm thấy .MuiCardContent-root sau 180 giây. Nội dung trang: ${content.slice(0, 500)}...`);
+      throw new Error(`Không tìm thấy .MuiTableContainer-root.psc-table sau 180 giây. Nội dung trang: ${content.slice(0, 500)}...`);
     });
 
     const examData = await page.evaluate(() => {
-      const cardContent = document.querySelector(".MuiCardContent-root");
-      if (!cardContent) {
-        throw new Error("Không tìm thấy .MuiCardContent-root!");
+      const table = document.querySelector(".MuiTableContainer-root.psc-table");
+      if (!table) {
+        throw new Error("Không tìm thấy bảng lịch thi .MuiTableContainer-root.psc-table!");
       }
 
-      const spans = Array.from(cardContent.querySelectorAll("span.MuiTypography-body2"));
-      let upcomingTable = null;
-      spans.forEach((span, index) => {
-        if (span.textContent.trim() === "Lịch chưa thi") {
-          upcomingTable = cardContent.querySelectorAll(".MuiTableContainer-root.psc-table")[index];
-        }
-      });
-
-      if (!upcomingTable) {
-        throw new Error("Không tìm thấy bảng 'Lịch chưa thi'!");
-      }
-
-      const rows = upcomingTable.querySelectorAll("tbody tr.psc_ExamSapToi");
+      const rows = table.querySelectorAll("tbody tr.psc_ExamSapToi");
       if (!rows.length) {
-        return []; // Trả về mảng rỗng nếu không có lịch chưa thi
+        return { exams: [], year: "Không rõ", semester: "Không rõ" }; // Trả về mảng rỗng nếu không có lịch
       }
 
       const exams = Array.from(rows).map((row) => {
@@ -498,7 +486,7 @@ async function getExamSchedule() {
         };
       });
 
-      // Lấy thông tin năm học và học kỳ
+      // Lấy thông tin năm học và học kỳ (nếu có)
       const year = document.querySelector("input[name='NamHienTai']")?.value || "Không rõ";
       const semester = document.querySelector(".MuiSelect-select")?.textContent.trim() || "Không rõ";
 
