@@ -436,6 +436,69 @@ async function getAccountFees() {
   }
 }
 
+// **Hàm lấy lịch thi học kỳ**
+async function getExamSchedule() {
+  const browser = await launchBrowser();
+  const page = await browser.newPage();
+  try {
+    await login(page, process.env.VHU_EMAIL, process.env.VHU_PASSWORD);
+    console.log("🏠 Điều hướng đến trang chủ sinh viên...");
+    await page.goto("https://portal.vhu.edu.vn/student", {
+      waitUntil: "networkidle0",
+      timeout: 180000,
+    });
+
+    console.log("📝 Điều hướng đến trang lịch thi...");
+    await page.goto("https://portal.vhu.edu.vn/student/exams", {
+      waitUntil: "networkidle0",
+      timeout: 180000,
+    });
+    console.log(`🌐 URL sau khi truy cập lịch thi: ${page.url()}`);
+
+    console.log("⏳ Đang chờ bảng lịch thi tải...");
+    await page.waitForSelector(".MuiTableContainer-root.psc-table", { timeout: 180000 }).catch(async () => {
+      const content = await page.content();
+      throw new Error(`Không tìm thấy bảng lịch thi sau 180 giây. Nội dung trang: ${content.slice(0, 500)}...`);
+    });
+
+    const examData = await page.evaluate(() => {
+      const table = document.querySelector(".MuiTableContainer-root.psc-table table");
+      if (!table) {
+        throw new Error("Không tìm thấy bảng lịch thi (.MuiTableContainer-root.psc-table table)");
+      }
+
+      const rows = table.querySelectorAll("tbody tr");
+      if (!rows.length) {
+        throw new Error("Không tìm thấy lịch thi trong tbody!");
+      }
+
+      const exams = Array.from(rows).map((row) => {
+        const cols = row.querySelectorAll("td");
+        return {
+          subject: cols[0]?.textContent.trim() || "Không rõ",
+          attempt: cols[1]?.textContent.trim() || "Không rõ",
+          date: cols[2]?.textContent.trim() || "Không rõ",
+          time: cols[3]?.textContent.trim() || "Chưa cập nhật",
+          room: cols[4]?.textContent.trim() || "Chưa cập nhật",
+          location: cols[5]?.textContent.trim() || "Chưa cập nhật",
+          format: cols[6]?.textContent.trim() || "Không rõ",
+          absent: cols[7]?.textContent.trim() || "Không",
+        };
+      });
+
+      return exams;
+    });
+
+    console.log("✅ Đã lấy dữ liệu lịch thi:", examData);
+    return examData;
+  } catch (error) {
+    console.error("❌ Lỗi trong getExamSchedule:", error.message);
+    throw error;
+  } finally {
+    await browser.close();
+  }
+}
+
 // **Cấu hình server**
 const PORT = process.env.PORT || 10000;
 app.get("/ping", (req, res) => res.status(200).send("Bot is alive!"));
@@ -493,6 +556,7 @@ bot.onText(/\/start/, (msg) => {
       "📅 /tuansau - Lấy lịch học tuần sau.\n" +
       "🔔 /thongbao - Lấy danh sách thông báo.\n" +
       "📋 /congtac - Lấy danh sách công tác xã hội.\n" +
+      "📝 /lichthi - Lấy lịch thi học kỳ này.\n" +
       "📊 /tinchi - Tổng số tín chỉ và điểm TB đã đạt.\n" +
       "💵 /taichinh - Lấy thông tin tài chính sinh viên.\n" +
       "💡Mẹo: Nhấn nút Menu 📋 bên cạnh để chọn lệnh nhanh hơn!"
@@ -636,6 +700,36 @@ bot.onText(/\/taichinh/, async (msg) => {
     bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
   } catch (error) {
     bot.sendMessage(chatId, `❌ Lỗi lấy dữ liệu tài chính: ${error.message}`);
+  }
+});
+
+bot.onText(/\/lichthi/, async (msg) => {
+  const chatId = msg.chat.id;
+  bot.sendMessage(chatId, "📝 Đang lấy lịch thi học kỳ này, vui lòng chờ trong giây lát ⌛...");
+  try {
+    const exams = await getExamSchedule();
+    let message = `📝 **Lịch thi học kỳ này của bạn:**\n------------------------------------\n`;
+    let hasExams = false;
+
+    exams.forEach((exam, index) => {
+      hasExams = true;
+      message += `📚 **${index + 1}. ${exam.subject}**\n` +
+                 `🔢 Lần thi: ${exam.attempt}\n` +
+                 `📅 Ngày thi: ${exam.date}\n` +
+                 `⏰ Giờ thi: ${exam.time}\n` +
+                 `📍 Phòng thi: ${exam.room} (${exam.location})\n` +
+                 `✍️ Hình thức: ${exam.format}\n` +
+                 `🚫 Vắng thi: ${exam.absent}\n\n`;
+    });
+
+    if (!hasExams) {
+      message = `📝 **Lịch thi học kỳ này:**\n------------------------------------\n❌ Chưa có lịch thi nào được cập nhật.`;
+    }
+
+    message += `ℹ️ Dữ liệu từ [Portal VHU](https://portal.vhu.edu.vn/).`;
+    bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
+  } catch (error) {
+    bot.sendMessage(chatId, `❌ Lỗi lấy lịch thi: ${error.message}`);
   }
 });
 
