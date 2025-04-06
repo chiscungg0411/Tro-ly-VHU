@@ -449,27 +449,39 @@ async function getExamSchedule() {
     });
 
     console.log("📝 Điều hướng đến trang lịch thi...");
-    await page.goto("https://portal.vhu.edu.vn/student/exams", {
+    await page.goto("https://portal.vhu.edu.vn/student/examinations", {
       waitUntil: "networkidle0",
       timeout: 180000,
     });
     console.log(`🌐 URL sau khi truy cập lịch thi: ${page.url()}`);
 
     console.log("⏳ Đang chờ bảng lịch thi tải...");
-    await page.waitForSelector(".MuiTableContainer-root.psc-table", { timeout: 180000 }).catch(async () => {
+    await page.waitForSelector(".MuiCardContent-root", { timeout: 180000 }).catch(async () => {
       const content = await page.content();
-      throw new Error(`Không tìm thấy bảng lịch thi sau 180 giây. Nội dung trang: ${content.slice(0, 500)}...`);
+      throw new Error(`Không tìm thấy .MuiCardContent-root sau 180 giây. Nội dung trang: ${content.slice(0, 500)}...`);
     });
 
     const examData = await page.evaluate(() => {
-      const table = document.querySelector(".MuiTableContainer-root.psc-table table");
-      if (!table) {
-        throw new Error("Không tìm thấy bảng lịch thi (.MuiTableContainer-root.psc-table table)");
+      const cardContent = document.querySelector(".MuiCardContent-root");
+      if (!cardContent) {
+        throw new Error("Không tìm thấy .MuiCardContent-root!");
       }
 
-      const rows = table.querySelectorAll("tbody tr");
+      const spans = Array.from(cardContent.querySelectorAll("span.MuiTypography-body2"));
+      let upcomingTable = null;
+      spans.forEach((span, index) => {
+        if (span.textContent.trim() === "Lịch chưa thi") {
+          upcomingTable = cardContent.querySelectorAll(".MuiTableContainer-root.psc-table")[index];
+        }
+      });
+
+      if (!upcomingTable) {
+        throw new Error("Không tìm thấy bảng 'Lịch chưa thi'!");
+      }
+
+      const rows = upcomingTable.querySelectorAll("tbody tr.psc_ExamSapToi");
       if (!rows.length) {
-        throw new Error("Không tìm thấy lịch thi trong tbody!");
+        return []; // Trả về mảng rỗng nếu không có lịch chưa thi
       }
 
       const exams = Array.from(rows).map((row) => {
@@ -486,7 +498,11 @@ async function getExamSchedule() {
         };
       });
 
-      return exams;
+      // Lấy thông tin năm học và học kỳ
+      const year = document.querySelector("input[name='NamHienTai']")?.value || "Không rõ";
+      const semester = document.querySelector(".MuiSelect-select")?.textContent.trim() || "Không rõ";
+
+      return { exams, year, semester };
     });
 
     console.log("✅ Đã lấy dữ liệu lịch thi:", examData);
@@ -707,23 +723,23 @@ bot.onText(/\/lichthi/, async (msg) => {
   const chatId = msg.chat.id;
   bot.sendMessage(chatId, "📝 Đang lấy lịch thi học kỳ này, vui lòng chờ trong giây lát ⌛...");
   try {
-    const exams = await getExamSchedule();
-    let message = `📝 **Lịch thi học kỳ này của bạn:**\n------------------------------------\n`;
+    const { exams, year, semester } = await getExamSchedule();
+    let message = `📝 **Lịch thi ${semester} - Năm học ${year}:**\n------------------------------------\n`;
     let hasExams = false;
 
-    exams.forEach((exam, index) => {
-      hasExams = true;
-      message += `📚 **${index + 1}. ${exam.subject}**\n` +
-                 `🔢 Lần thi: ${exam.attempt}\n` +
-                 `📅 Ngày thi: ${exam.date}\n` +
-                 `⏰ Giờ thi: ${exam.time}\n` +
-                 `📍 Phòng thi: ${exam.room} (${exam.location})\n` +
-                 `✍️ Hình thức: ${exam.format}\n` +
-                 `🚫 Vắng thi: ${exam.absent}\n\n`;
-    });
-
-    if (!hasExams) {
-      message = `📝 **Lịch thi học kỳ này:**\n------------------------------------\n❌ Chưa có lịch thi nào được cập nhật.`;
+    if (exams.length === 0) {
+      message += "❌ Chưa có lịch thi nào được cập nhật.";
+    } else {
+      exams.forEach((exam, index) => {
+        hasExams = true;
+        message += `📚 **${index + 1}. ${exam.subject}**\n` +
+                   `🔢 Lần thi: ${exam.attempt}\n` +
+                   `📅 Ngày thi: ${exam.date}\n` +
+                   `⏰ Giờ thi: ${exam.time}\n` +
+                   `📍 Phòng thi: ${exam.room} (${exam.location})\n` +
+                   `✍️ Hình thức: ${exam.format}\n` +
+                   `🚫 Vắng thi: ${exam.absent}\n\n`;
+      });
     }
 
     message += `ℹ️ Dữ liệu từ [Portal VHU](https://portal.vhu.edu.vn/).`;
