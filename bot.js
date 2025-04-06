@@ -449,7 +449,7 @@ async function getExamSchedule() {
     });
 
     console.log("📝 Điều hướng đến trang lịch thi...");
-    await page.goto("https://portal.vhu.edu.vn/student/examinations", {
+    await page.goto("https://portal.vhu.edu.vn/student/exam", {
       waitUntil: "networkidle0",
       timeout: 180000,
     });
