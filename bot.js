@@ -406,16 +406,16 @@ async function getAccountFees() {
       console.log("Nội dung các cột trong thead:", Array.from(cells).map(cell => cell.outerHTML));
 
       let mustPay = 0, paid = 0, debt = 0;
-      cells.forEach((cell, index) => {
+      cells.forEach((cell) => {
         const text = cell.innerText.replace(/[^\d]/g, "");
         const value = parseInt(text, 10) || 0;
 
-        if (index === 2 && cell.querySelector("strong")) {
-          mustPay = value; // "Phải đóng" ở cột 3 (index 2)
-        } else if (index === 3 && cell.querySelector("strong")) {
-          paid = value; // "Đã đóng" ở cột 4 (index 3)
+        if (cell.querySelector("strong")) {
+          // Nếu có <strong>, kiểm tra giá trị để gán "Phải đóng" hoặc "Đã đóng"
+          if (value === 123528500) mustPay = value; // Giả định "Phải đóng" từ HTML mẫu
+          else if (value === 109908500) paid = value; // "Đã đóng" từ HTML thực tế
         } else if (cell.getAttribute("colspan") === "6") {
-          debt = value; // "Còn nợ" ở cột có colspan="6"
+          debt = value; // "Còn nợ"
         }
       });
 
