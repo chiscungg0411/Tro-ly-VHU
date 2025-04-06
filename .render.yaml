@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: vhu-telegram-bot
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: TELEGRAM_BOT_TOKEN
+        fromDatabase:
+          name: telegram-bot-token
+      - key: VHU_EMAIL
+        fromDatabase:
+          name: vhu-email
+      - key: VHU_PASSWORD
+        fromDatabase:
+          name: vhu-password
+    healthCheckPath: /ping
+    autoDeploy: true
+    port: 10000 # Thêm dòng này để khai báo rõ port
