@@ -525,6 +525,27 @@ app.get("/wake-up", (req, res) => {
   res.status(200).send("Chatbot is awake!");
 });
 
+<<<<<<< HEAD
+=======
+// **Thiết lập thanh menu**
+async function setupBotMenu() {
+  try {
+    await bot.setMyCommands([
+      { command: "start", description: "✈️ Bắt đầu giao tiếp với Trợ lý 𝙑𝙃𝙐" },
+      { command: "tuannay", description: "📅 Lấy lịch học tuần này" },
+      { command: "tuansau", description: "🗓️ Lấy lịch học tuần sau" },
+      { command: "thongbao", description: "🔔 Lấy danh sách thông báo" },
+      { command: "congtac", description: "📝 Lấy danh sách công tác" },
+      { command: "lichthi", description: "📝 Lấy lịch thi học kỳ này" },
+      { command: "tinchi", description: "📊 Tổng số tín chỉ và điểm TB" },
+      { command: "taichinh", description: "💵 Thông tin tài chính sinh viên" }
+    ]);
+    console.log("✅ Thanh menu đã được thiết lập.");
+  } catch (error) {
+    console.error("❌ Lỗi thiết lập menu:", error.message);
+  }
+}
+>>>>>>> 01fce8c8924be6119ee0fd7e497b382e382efb1b
 
 app.listen(PORT, async () => {
   console.log(`Server chạy trên port ${PORT}`);
@@ -553,7 +574,11 @@ bot.onText(/\/start/, (msg) => {
       "📅 /tuannay - Lấy lịch học tuần này.\n" +
       "📅 /tuansau - Lấy lịch học tuần sau.\n" +
       "🔔 /thongbao - Lấy danh sách thông báo.\n" +
+<<<<<<< HEAD
       "📋 /congtac - Lấy danh sách công tác xã hội.\n" +
+=======
+      "📜 /congtac - Lấy danh sách công tác xã hội.\n" +
+>>>>>>> 01fce8c8924be6119ee0fd7e497b382e382efb1b
       "📝 /lichthi - Lấy lịch thi học kỳ này.\n" +
       "📊 /tinchi - Tổng số tín chỉ và điểm TB đã đạt.\n" +
       "💵 /taichinh - Lấy thông tin tài chính sinh viên.\n" +
@@ -731,4 +756,8 @@ bot.onText(/\/lichthi/, async (msg) => {
   }
 });
 
+<<<<<<< HEAD
 console.log("🤖 Bot Telegram đang khởi động...");
+=======
+console.log("🤖 Bot Telegram đang khởi động...");
+>>>>>>> 01fce8c8924be6119ee0fd7e497b382e382efb1b
