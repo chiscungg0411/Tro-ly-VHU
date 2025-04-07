@@ -406,16 +406,16 @@ async function getAccountFees() {
       console.log("Nội dung các cột trong thead:", Array.from(cells).map(cell => cell.outerHTML));
 
       let mustPay = 0, paid = 0, debt = 0;
-      cells.forEach((cell) => {
+      cells.forEach((cell, index) => {
         const text = cell.innerText.replace(/[^\d]/g, "");
         const value = parseInt(text, 10) || 0;
 
-        if (cell.querySelector("strong")) {
-          // Nếu có <strong>, kiểm tra giá trị để gán "Phải đóng" hoặc "Đã đóng"
-          if (value === 123528500) mustPay = value; // Giả định "Phải đóng" từ HTML mẫu
-          else if (value === 109908500) paid = value; // "Đã đóng" từ HTML thực tế
+        if (index === 2 && cell.querySelector("strong")) {
+          mustPay = value; // "Phải đóng" ở cột 3 (index 2)
+        } else if (index === 3 && cell.querySelector("strong")) {
+          paid = value; // "Đã đóng" ở cột 4 (index 3)
         } else if (cell.getAttribute("colspan") === "6") {
-          debt = value; // "Còn nợ"
+          debt = value; // "Còn nợ" ở cột có colspan="6"
         }
       });
 
@@ -436,85 +436,6 @@ async function getAccountFees() {
   }
 }
 
-// **Hàm lấy lịch thi học kỳ**
-async function getExamSchedule() {
-  const browser = await launchBrowser();
-  const page = await browser.newPage();
-  try {
-    await login(page, process.env.VHU_EMAIL, process.env.VHU_PASSWORD);
-    console.log("🏠 Điều hướng đến trang chủ sinh viên...");
-    await page.goto("https://portal.vhu.edu.vn/student", {
-      waitUntil: "networkidle0",
-      timeout: 180000,
-    });
-
-    console.log("📝 Điều hướng đến trang lịch thi...");
-    await page.goto("https://portal.vhu.edu.vn/student/exam", {
-      waitUntil: "networkidle0",
-      timeout: 180000,
-    });
-    console.log(`🌐 URL sau khi truy cập lịch thi: ${page.url()}`);
-
-    console.log("⏳ Đang chờ bảng lịch thi tải...");
-    await page.waitForSelector(".MuiTableContainer-root.psc-table", { timeout: 180000 }).catch(async () => {
-      const content = await page.content();
-      throw new Error(`Không tìm thấy .MuiTableContainer-root.psc-table sau 180 giây. Nội dung trang: ${content.slice(0, 500)}...`);
-    });
-
-    const examData = await page.evaluate(() => {
-      const table = document.querySelector(".MuiTableContainer-root.psc-table");
-      if (!table) {
-        throw new Error("Không tìm thấy bảng lịch thi .MuiTableContainer-root.psc-table!");
-      }
-
-      const rows = table.querySelectorAll("tbody tr.psc_ExamSapToi");
-      if (!rows.length) {
-        return { exams: [], year: "Không rõ", semester: "Không rõ" }; // Trả về mảng rỗng nếu không có lịch
-      }
-
-      let exams = Array.from(rows).map((row) => {
-        const cols = row.querySelectorAll("td");
-        return {
-          subject: cols[0]?.textContent.trim() || "Không rõ",
-          attempt: cols[1]?.textContent.trim() || "Không rõ",
-          date: cols[2]?.textContent.trim() || "Không rõ",
-          time: cols[3]?.textContent.trim() || "Chưa cập nhật",
-          room: cols[4]?.textContent.trim() || "Chưa cập nhật",
-          location: cols[5]?.textContent.trim() || "Chưa cập nhật",
-          format: cols[6]?.textContent.trim() || "Không rõ",
-          absent: cols[7]?.textContent.trim() || "Không",
-        };
-      });
-
-      // Lọc các môn có cả phòng thi và địa điểm (loại bỏ nếu một trong hai là "Chưa cập nhật")
-      exams = exams.filter(exam => exam.room !== "Chưa cập nhật" && exam.location !== "Chưa cập nhật");
-
-      // Sắp xếp theo ngày thi (DD/MM/YYYY) từ cũ đến mới
-      exams.sort((a, b) => {
-        const [dayA, monthA, yearA] = a.date.split("/").map(Number);
-        const [dayB, monthB, yearB] = b.date.split("/").map(Number);
-        const dateA = new Date(yearA, monthA - 1, dayA);
-        const dateB = new Date(yearB, monthB - 1, dayB);
-        return dateA - dateB;
-      });
-
-      // Lấy thông tin năm học và học kỳ (nếu có)
-      const year = document.querySelector("input[name='NamHienTai']")?.value || "Không rõ";
-      const semester = document.querySelector(".MuiSelect-select")?.textContent.trim() || "Không rõ";
-
-      return { exams, year, semester };
-    });
-
-    console.log("✅ Đã lấy và lọc dữ liệu lịch thi:", examData);
-    return examData;
-  } catch (error) {
-    console.error("❌ Lỗi trong getExamSchedule:", error.message);
-    throw error;
-  } finally {
-    await browser.close();
-  }
-}
-
 // **Cấu hình server**
 const PORT = process.env.PORT || 10000;
 app.get("/ping", (req, res) => res.status(200).send("Bot is alive!"));
@@ -524,28 +445,6 @@ app.get("/wake-up", (req, res) => {
   console.log("⏰ Chatbot được đánh thức bởi cron-job.org!");
   res.status(200).send("Chatbot is awake!");
 });
-
-<<<<<<< HEAD
-=======
-// **Thiết lập thanh menu**
-async function setupBotMenu() {
-  try {
-    await bot.setMyCommands([
-      { command: "start", description: "✈️ Bắt đầu giao tiếp với Trợ lý 𝙑𝙃𝙐" },
-      { command: "tuannay", description: "📅 Lấy lịch học tuần này" },
-      { command: "tuansau", description: "🗓️ Lấy lịch học tuần sau" },
-      { command: "thongbao", description: "🔔 Lấy danh sách thông báo" },
-      { command: "congtac", description: "📝 Lấy danh sách công tác" },
-      { command: "lichthi", description: "📝 Lấy lịch thi học kỳ này" },
-      { command: "tinchi", description: "📊 Tổng số tín chỉ và điểm TB" },
-      { command: "taichinh", description: "💵 Thông tin tài chính sinh viên" }
-    ]);
-    console.log("✅ Thanh menu đã được thiết lập.");
-  } catch (error) {
-    console.error("❌ Lỗi thiết lập menu:", error.message);
-  }
-}
->>>>>>> 01fce8c8924be6119ee0fd7e497b382e382efb1b
 
 app.listen(PORT, async () => {
   console.log(`Server chạy trên port ${PORT}`);
@@ -570,16 +469,11 @@ bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
   bot.sendMessage(
     chatId,
-    "👋 Xin chào! Mình là Trợ lý VHU, cập nhật thông tin nhanh nhất từ Portal VHU .\n" +
+    "👋 Xin chào! Mình là Trợ lý VHU.\n" +
       "📅 /tuannay - Lấy lịch học tuần này.\n" +
       "📅 /tuansau - Lấy lịch học tuần sau.\n" +
       "🔔 /thongbao - Lấy danh sách thông báo.\n" +
-<<<<<<< HEAD
       "📋 /congtac - Lấy danh sách công tác xã hội.\n" +
-=======
-      "📜 /congtac - Lấy danh sách công tác xã hội.\n" +
->>>>>>> 01fce8c8924be6119ee0fd7e497b382e382efb1b
-      "📝 /lichthi - Lấy lịch thi học kỳ này.\n" +
       "📊 /tinchi - Tổng số tín chỉ và điểm TB đã đạt.\n" +
       "💵 /taichinh - Lấy thông tin tài chính sinh viên.\n" +
       "💡Mẹo: Nhấn nút Menu 📋 bên cạnh để chọn lệnh nhanh hơn!"
@@ -627,7 +521,7 @@ bot.onText(/\/tuansau/, async (msg) => {
   bot.sendMessage(chatId, "📅 Đang lấy lịch học tuần sau, vui lòng chờ trong giây lát ⌛...");
   try {
     const lichHoc = await getSchedule(1);
-    let message = `📅 **Lịch học tuần sau của bạn:**\n------------------------------------\n`;
+    let message = `📅 **Lịch học tuần sau**\n------------------------------------\n`;
     let hasSchedule = false;
 
     for (const [ngay, monHocs] of Object.entries(lichHoc.schedule)) {
@@ -660,7 +554,7 @@ bot.onText(/\/tuansau/, async (msg) => {
 
 bot.onText(/\/thongbao/, async (msg) => {
   const chatId = msg.chat.id;
-  bot.sendMessage(chatId, "🔔 Đang lấy danh sách thông báo, vui lòng chờ trong giây lát ⌛...");
+  bot.sendMessage(chatId, "🔔 Đang lấy thông báo, vui lòng chờ trong giây lát ⌛...");
   try {
     const notifications = await getNotifications();
     let message = "🔔 **Danh sách thông báo mới nhất:**\n------------------------------------\n";
@@ -686,7 +580,7 @@ bot.onText(/\/congtac/, async (msg) => {
     if (congTacData.length > 5) message += `📢 Còn ${congTacData.length - 5} công tác khác. Hãy truy cập vào [Portal VHU](https://portal.vhu.edu.vn/login) để biết thêm thông tin chi tiết.`;
     bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
   } catch (error) {
-    bot.sendMessage(chatId, `❌ Lỗi lấy danh sách công tác xã hội: ${error.message}`);
+    bot.sendMessage(chatId, `❌ Lỗi lấy công tác xã hội: ${error.message}`);
   }
 });
 
@@ -698,7 +592,7 @@ bot.onText(/\/tinchi/, async (msg) => {
     let message = `📊 **Tổng số tín chỉ và điểm trung bình của bạn:**\n------------------------------------\n`;
     message += `🎓 Số tín chỉ đã đạt: **${totalCredits} tín chỉ**\n`;
     message += `📈 Điểm TB chung (Hệ 10): **${avgScore}**\n`;
-    message += `ℹ️ Hãy truy cập vào [Portal VHU](https://portal.vhu.edu.vn/) để biết thêm thông tin chi tiết.`;
+    message += `ℹ️ Hãy truy cập [Portal VHU](https://portal.vhu.edu.vn/) để biết thêm thông tin chi tiết.`;
     bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
   } catch (error) {
     bot.sendMessage(chatId, `❌ Lỗi lấy dữ liệu: ${error.message}`);
@@ -726,38 +620,4 @@ bot.onText(/\/taichinh/, async (msg) => {
   }
 });
 
-bot.onText(/\/lichthi/, async (msg) => {
-  const chatId = msg.chat.id;
-  bot.sendMessage(chatId, "📝 Đang lấy lịch thi học kỳ này, vui lòng chờ trong giây lát ⌛...");
-  try {
-    const { exams, year, semester } = await getExamSchedule();
-    let message = `📝 **Lịch thi ${semester} - Năm học ${year}:**\n------------------------------------\n`;
-    let hasExams = false;
-
-    if (exams.length === 0) {
-      message += "❌ Chưa có lịch thi nào được cập nhật.";
-    } else {
-      exams.forEach((exam, index) => {
-        hasExams = true;
-        message += `📚 **${index + 1}. ${exam.subject}**\n` +
-                   `🔢 Lần thi: ${exam.attempt}\n` +
-                   `📅 Ngày thi: ${exam.date}\n` +
-                   `⏰ Giờ thi: ${exam.time}\n` +
-                   `📍 Phòng thi: ${exam.room} (${exam.location})\n` +
-                   `✍️ Hình thức: ${exam.format}\n` +
-                   `🚫 Vắng thi: ${exam.absent}\n\n`;
-      });
-    }
-
-    message += `ℹ️ Hãy truy cập vào [Portal VHU](https://portal.vhu.edu.vn/) để biết thêm thông tin chi tiết.`;
-    bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
-  } catch (error) {
-    bot.sendMessage(chatId, `❌ Lỗi lấy lịch thi: ${error.message}`);
-  }
-});
-
-<<<<<<< HEAD
 console.log("🤖 Bot Telegram đang khởi động...");
-=======
-console.log("🤖 Bot Telegram đang khởi động...");
->>>>>>> 01fce8c8924be6119ee0fd7e497b382e382efb1b
