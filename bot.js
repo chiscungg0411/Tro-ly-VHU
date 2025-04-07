@@ -396,28 +396,31 @@ async function getAccountFees() {
         throw new Error("Không tìm thấy bảng tài chính (.MuiTableContainer-root table)");
       }
 
-      const headerRow = table.querySelector("thead tr");
-      if (!headerRow) {
-        throw new Error("Không tìm thấy hàng đầu tiên trong thead");
+      let mustPay = 0, paid = 0, debt = 0;
+
+      // Lấy toàn bộ văn bản trong bảng
+      const allText = table.innerText;
+
+      // Tìm "Phải đóng" (Must Pay)
+      const mustPayMatch = allText.match(/Phải đóng.*?(\d{1,3}(?:\.\d{3})*)/);
+      if (mustPayMatch) {
+        mustPay = parseInt(mustPayMatch[1].replace(/\./g, ""), 10);
       }
 
-      const cells = headerRow.querySelectorAll("th");
-      console.log(`Số cột tìm thấy: ${cells.length}`);
-      console.log("Nội dung các cột trong thead:", Array.from(cells).map(cell => cell.outerHTML));
+      // Tìm "Đã đóng" (Paid)
+      const paidMatch = allText.match(/Đã đóng.*?(\d{1,3}(?:\.\d{3})*)/);
+      if (paidMatch) {
+        paid = parseInt(paidMatch[1].replace(/\./g, ""), 10);
+      }
 
-      let mustPay = 0, paid = 0, debt = 0;
-      cells.forEach((cell, index) => {
-        const text = cell.innerText.replace(/[^\d]/g, "");
-        const value = parseInt(text, 10) || 0;
+      // Tìm "Còn nợ" (Debt)
+      const debtMatch = allText.match(/Còn nợ.*?(\d{1,3}(?:\.\d{3})*)/);
+      if (debtMatch) {
+        debt = parseInt(debtMatch[1].replace(/\./g, ""), 10);
+      }
 
-        if (index === 2 && cell.querySelector("strong")) {
-          mustPay = value; // "Phải đóng" ở cột 3 (index 2)
-        } else if (index === 3 && cell.querySelector("strong")) {
-          paid = value; // "Đã đóng" ở cột 4 (index 3)
-        } else if (cell.getAttribute("colspan") === "6") {
-          debt = value; // "Còn nợ" ở cột có colspan="6"
-        }
-      });
+      // Debug: In toàn bộ nội dung bảng để kiểm tra
+      console.log("📋 Nội dung bảng tài chính:", allText);
 
       return {
         mustPay,
