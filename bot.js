@@ -572,7 +572,7 @@ bot.onText(/\/start/, (msg) => {
       "📅 /tuannay - Lấy lịch học tuần này.\n" +
       "📅 /tuansau - Lấy lịch học tuần sau.\n" +
       "🔔 /thongbao - Lấy danh sách thông báo.\n" +
-      "📋 /congtac - Lấy danh sách công tác xã hội.\n" +
+      "📜 /congtac - Lấy danh sách công tác xã hội.\n" +
       "📝 /lichthi - Lấy lịch thi học kỳ này.\n" +
       "📊 /tinchi - Tổng số tín chỉ và điểm TB đã đạt.\n" +
       "💵 /taichinh - Lấy thông tin tài chính sinh viên.\n" +
