@@ -1,17 +1,21 @@
 services:
   - type: web
-    name: vhu-telegram-bot
-    env: node
+    name: vhu-telegram-bot-new
+    env: docker # Sử dụng Docker thay vì Node
     plan: free
-    buildCommand: npm install
-    startCommand: npm start
+    buildCommand: "" # Không cần buildCommand vì Dockerfile sẽ xử lý
+    startCommand: "" # Không cần startCommand vì Dockerfile đã định nghĩa CMD
     envVars:
       - key: TELEGRAM_BOT_TOKEN
-        value: 7515936236:AAEkHwK2dIzgVfYZY9ZTN7lNl2mfB5IolFM # Cập nhật token của cậu
+        value: 7515936236:AAEkHwK2dIzgVfYZY9ZTN7lNl2mfB5IolFM
       - key: VHU_EMAIL
-        value: 221A010032 # Cập nhật email của cậu
+        value: 221A010032
       - key: VHU_PASSWORD
-        value: 0411Vcc. # Cập nhật mật khẩu của cậu
+        value: 0411Vcc.
+      - key: PORT
+        value: 10000
+      - key: CHROME_PATH
+        value: /usr/bin/google-chrome-stable
     healthCheckPath: /ping
     autoDeploy: true
-    port: 10000
+    dockerfilePath: Dockerfile # Chỉ định rõ Dockerfile

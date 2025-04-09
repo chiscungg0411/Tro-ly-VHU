@@ -4,8 +4,7 @@
   "description": "Telegram bot for VHU student portal",
   "main": "bot.js",
   "scripts": {
-    "start": "node bot.js",
-    "postinstall": "apt-get update && apt-get install -y chromium"
+    "start": "node bot.js"
   },
   "dependencies": {
     "dotenv": "^16.0.0",

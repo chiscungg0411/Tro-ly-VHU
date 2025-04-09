@@ -11,7 +11,7 @@ const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 async function launchBrowser() {
   try {
     const browser = await puppeteer.launch({
-      executablePath: "/usr/bin/chromium", // Đường dẫn đến Chromium trên Render
+      executablePath: process.env.CHROME_PATH || "/usr/bin/google-chrome-stable",
       headless: "new",
       args: [
         "--no-sandbox",

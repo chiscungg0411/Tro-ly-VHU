@@ -60,7 +60,7 @@ process.on("SIGINT", () => {
 async function launchBrowser() {
   try {
     const browser = await puppeteer.launch({
-      executablePath: process.env.CHROMIUM_PATH || "/usr/bin/chromium", // Đường dẫn đến Chromium trên Render
+      executablePath: process.env.CHROME_PATH || "/usr/bin/google-chrome-stable",
       headless: "new",
       args: [
         "--no-sandbox",
