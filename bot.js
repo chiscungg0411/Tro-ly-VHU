@@ -31,28 +31,36 @@ const bot = new TelegramBot(TOKEN);
 // **Xử lý lỗi hệ thống**
 process.on("unhandledRejection", (reason, promise) => {
   console.error("❌ Unhandled Rejection at:", promise, "reason:", reason);
+  // Không thoát tiến trình để tránh crash
 });
 
 process.on("uncaughtException", (error) => {
   console.error("❌ Uncaught Exception:", error.message);
+  // Không thoát tiến trình để tránh crash
 });
 
 // **Xử lý tín hiệu SIGTERM**
 process.on("SIGTERM", () => {
   console.log("Received SIGTERM. Performing graceful shutdown...");
-  process.exit(0);
+  server.close(() => {
+    console.log("Server closed.");
+    process.exit(0);
+  });
 });
 
 process.on("SIGINT", () => {
   console.log("Received SIGINT. Performing graceful shutdown...");
-  process.exit(0);
+  server.close(() => {
+    console.log("Server closed.");
+    process.exit(0);
+  });
 });
 
 // **Hàm khởi tạo trình duyệt Puppeteer**
 async function launchBrowser() {
   try {
     const browser = await puppeteer.launch({
-      executablePath: "/usr/bin/chromium", // Đường dẫn đến Chromium trên Render
+      executablePath: process.env.CHROMIUM_PATH || "/usr/bin/chromium", // Đường dẫn đến Chromium trên Render
       headless: "new",
       args: [
         "--no-sandbox",
@@ -462,17 +470,22 @@ console.log(`🌐 WEBHOOK_URL: ${WEBHOOK_URL}`);
 
 // Endpoint để Telegram gửi tin nhắn đến (POST)
 app.post(`/bot${TOKEN}`, (req, res) => {
+  console.log("Received POST request from Telegram");
   bot.processUpdate(req.body);
   res.sendStatus(200);
 });
 
 // Endpoint để kiểm tra Webhook URL (GET)
 app.get(`/bot${TOKEN}`, (req, res) => {
+  console.log("Received GET request for Webhook URL");
   res.status(200).send(`✅ Đây là Webhook URL của bot. Token: ${TOKEN}. Vui lòng sử dụng bot trên Telegram để tương tác!`);
 });
 
 // Endpoint để kiểm tra bot còn sống
-app.get("/ping", (req, res) => res.status(200).send("Bot is alive!"));
+app.get("/ping", (req, res) => {
+  console.log("Received GET request for /ping");
+  res.status(200).send("Bot is alive!");
+});
 
 // Endpoint để đánh thức bot
 app.get("/wake-up", (req, res) => {
@@ -498,6 +511,7 @@ server.headersTimeout = 120000;
 // **Xử lý lệnh Telegram**
 bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
+  console.log(`Received /start command from chat ${chatId}`);
   bot.sendMessage(
     chatId,
     "👋 Xin chào! Mình là Trợ lý VHU.\n" +
@@ -514,6 +528,7 @@ bot.onText(/\/start/, (msg) => {
 
 bot.onText(/\/tuannay/, async (msg) => {
   const chatId = msg.chat.id;
+  console.log(`Received /tuannay command from chat ${chatId}`);
   bot.sendMessage(chatId, "📅 Đang lấy lịch học tuần này, vui lòng chờ trong giây lát ⌛...");
   try {
     const lichHoc = await getSchedule(0);
@@ -544,12 +559,14 @@ bot.onText(/\/tuannay/, async (msg) => {
 
     bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
   } catch (error) {
+    console.error(`❌ Lỗi lấy lịch học tuần này: ${error.message}`);
     bot.sendMessage(chatId, `❌ Lỗi lấy lịch học: ${error.message}`);
   }
 });
 
 bot.onText(/\/tuansau/, async (msg) => {
   const chatId = msg.chat.id;
+  console.log(`Received /tuansau command from chat ${chatId}`);
   bot.sendMessage(chatId, "📅 Đang lấy lịch học tuần sau, vui lòng chờ trong giây lát ⌛...");
   try {
     const lichHoc = await getSchedule(1);
@@ -580,12 +597,14 @@ bot.onText(/\/tuansau/, async (msg) => {
 
     bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
   } catch (error) {
+    console.error(`❌ Lỗi lấy lịch học tuần sau: ${error.message}`);
     bot.sendMessage(chatId, `❌ Lỗi lấy lịch học: ${error.message}`);
   }
 });
 
 bot.onText(/\/thongbao/, async (msg) => {
   const chatId = msg.chat.id;
+  console.log(`Received /thongbao command from chat ${chatId}`);
   bot.sendMessage(chatId, "🔔 Đang lấy thông báo, vui lòng chờ trong giây lát ⌛...");
   try {
     const notifications = await getNotifications();
@@ -596,12 +615,14 @@ bot.onText(/\/thongbao/, async (msg) => {
     if (notifications.length > 5) message += `📢 Còn ${notifications.length - 5} thông báo khác. Hãy truy cập vào [Portal VHU](https://portal.vhu.edu.vn/login) để biết thêm thông tin chi tiết.`;
     bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
   } catch (error) {
+    console.error(`❌ Lỗi lấy thông báo: ${error.message}`);
     bot.sendMessage(chatId, `❌ Lỗi lấy thông báo: ${error.message}`);
   }
 });
 
 bot.onText(/\/congtac/, async (msg) => {
   const chatId = msg.chat.id;
+  console.log(`Received /congtac command from chat ${chatId}`);
   bot.sendMessage(chatId, "📋 Đang lấy danh sách công tác xã hội, vui lòng chờ trong giây lát ⌛...");
   try {
     const congTacData = await getSocialWork();
@@ -612,12 +633,14 @@ bot.onText(/\/congtac/, async (msg) => {
     if (congTacData.length > 5) message += `📢 Còn ${congTacData.length - 5} công tác khác. Hãy truy cập vào [Portal VHU](https://portal.vhu.edu.vn/login) để biết thêm thông tin chi tiết.`;
     bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
   } catch (error) {
+    console.error(`❌ Lỗi lấy công tác xã hội: ${error.message}`);
     bot.sendMessage(chatId, `❌ Lỗi lấy công tác xã hội: ${error.message}`);
   }
 });
 
 bot.onText(/\/tinchi/, async (msg) => {
   const chatId = msg.chat.id;
+  console.log(`Received /tinchi command from chat ${chatId}`);
   bot.sendMessage(chatId, "📊 Đang lấy tổng số tín chỉ và điểm TB, vui lòng chờ trong giây lát ⌛...");
   try {
     const { totalCredits, avgScore } = await getCredits();
@@ -627,12 +650,14 @@ bot.onText(/\/tinchi/, async (msg) => {
     message += `ℹ️ Hãy truy cập [Portal VHU](https://portal.vhu.edu.vn/) để biết thêm thông tin chi tiết.`;
     bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
   } catch (error) {
+    console.error(`❌ Lỗi lấy tín chỉ: ${error.message}`);
     bot.sendMessage(chatId, `❌ Lỗi lấy dữ liệu: ${error.message}`);
   }
 });
 
 bot.onText(/\/lichthi/, async (msg) => {
   const chatId = msg.chat.id;
+  console.log(`Received /lichthi command from chat ${chatId}`);
   bot.sendMessage(chatId, "📝 Đang lấy lịch thi học kỳ này, vui lòng chờ trong giây lát ⌛...");
   try {
     const { exams, year, semester } = await getExamSchedule();
@@ -657,12 +682,14 @@ bot.onText(/\/lichthi/, async (msg) => {
     message += `ℹ️ Hãy truy cập [Portal VHU](https://portal.vhu.edu.vn/) để biết thêm thông tin chi tiết.`;
     bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
   } catch (error) {
+    console.error(`❌ Lỗi lấy lịch thi: ${error.message}`);
     bot.sendMessage(chatId, `❌ Lỗi lấy lịch thi: ${error.message}`);
   }
 });
 
 bot.onText(/\/taichinh/, async (msg) => {
   const chatId = msg.chat.id;
+  console.log(`Received /taichinh command from chat ${chatId}`);
   bot.sendMessage(chatId, "💰 Đang lấy thông tin tài chính, vui lòng chờ trong giây lát ⌛...");
   try {
     const { mustPay, paid, debt } = await getAccountFees();
@@ -676,6 +703,7 @@ bot.onText(/\/taichinh/, async (msg) => {
 
     bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
   } catch (error) {
+    console.error(`❌ Lỗi lấy dữ liệu tài chính: ${error.message}`);
     bot.sendMessage(chatId, `❌ Lỗi lấy dữ liệu tài chính: ${error.message}`);
   }
 });
