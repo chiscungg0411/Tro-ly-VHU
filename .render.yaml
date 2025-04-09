@@ -1,21 +1,20 @@
 services:
   - type: web
-    name: vhu-telegram-bot-new
-    env: docker
+    name: vhu-telegram-bot
+    env: node
     plan: free
-    buildCommand: ""
-    startCommand: ""
+    buildCommand: npm install
+    startCommand: npm start
     envVars:
       - key: TELEGRAM_BOT_TOKEN
-        value: 7515936236:AAEkHwK2dIzgVfYZY9ZTN7lNl2mfB5IolFM
+        fromDatabase:
+          name: telegram-bot-token
       - key: VHU_EMAIL
-        value: 221A010032
+        fromDatabase:
+          name: vhu-email
       - key: VHU_PASSWORD
-        value: 0411Vcc.
-      - key: PORT
-        value: 10000
-      - key: CHROME_PATH
-        value: /app/node_modules/@puppeteer/browsers/chrome/*/chrome
+        fromDatabase:
+          name: vhu-password
     healthCheckPath: /ping
     autoDeploy: true
-    dockerfilePath: Dockerfile
+    port: 10000
