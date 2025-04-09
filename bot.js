@@ -702,7 +702,7 @@ bot.onText(/\/lichthi/, async (msg) => {
       });
     }
 
-    message += `ℹ️ Dữ liệu từ [Portal VHU](https://portal.vhu.edu.vn/).`;
+    message += `ℹ️ Hãy truy cập [Portal VHU](https://portal.vhu.edu.vn/) để biết thêm thông tin chi tiết.`;
     bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
   } catch (error) {
     bot.sendMessage(chatId, `❌ Lỗi lấy lịch thi: ${error.message}`);
