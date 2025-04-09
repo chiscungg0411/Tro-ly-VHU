@@ -1,20 +1,21 @@
 {
-  "name": "tro-ly-vhu",
+  "name": "vhu-telegram-bot",
   "version": "1.0.0",
   "description": "Telegram bot for VHU student portal",
   "main": "bot.js",
   "scripts": {
-    "start": "node bot.js"
+    "start": "node bot.js",
+    "install": "apt-get update && apt-get install -y google-chrome-stable"
   },
   "dependencies": {
     "dotenv": "^16.0.0",
     "express": "^4.17.1",
     "node-telegram-bot-api": "^0.61.0",
-    "puppeteer-core": "^22.6.5", // Thay puppeteer bằng puppeteer-core
+    "puppeteer-core": "^22.0.0",
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-stealth": "^2.11.2",
-    "@puppeteer/browsers": "^2.2.0" // Thêm package để cài đặt Chromium
+    "nodemon": "^3.0.1"
   },
-  "author": "Your Name",
+  "author": "chiscungg0411",
   "license": "ISC"
 }
