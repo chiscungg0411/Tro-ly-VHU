@@ -1,7 +1,7 @@
 require("dotenv").config();
 const TelegramBot = require("node-telegram-bot-api");
 const express = require("express");
-const puppeteer = require("puppeteer-extra");
+const puppeteer = require("puppeteer-core");
 const StealthPlugin = require("puppeteer-extra-plugin-stealth");
 const { getSchedule } = require("./getSchedule"); // Import hàm getSchedule
 
@@ -60,7 +60,7 @@ process.on("SIGINT", () => {
 async function launchBrowser() {
   try {
     const browser = await puppeteer.launch({
-      executablePath: process.env.CHROME_PATH || "/usr/bin/chromium",
+      executablePath: process.env.CHROME_PATH || "/app/node_modules/@puppeteer/browsers/chrome/*/chrome",
       headless: "new",
       args: [
         "--no-sandbox",

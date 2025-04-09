@@ -10,8 +10,10 @@
     "dotenv": "^16.0.0",
     "express": "^4.17.1",
     "node-telegram-bot-api": "^0.61.0",
+    "puppeteer-core": "^22.6.5", // Thay puppeteer bằng puppeteer-core
     "puppeteer-extra": "^3.3.6",
-    "puppeteer-extra-plugin-stealth": "^2.11.2"
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
+    "@puppeteer/browsers": "^2.2.0" // Thêm package để cài đặt Chromium
   },
   "author": "Your Name",
   "license": "ISC"

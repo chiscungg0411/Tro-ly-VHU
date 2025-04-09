@@ -1,5 +1,5 @@
 // getSchedule.js
-const puppeteer = require("puppeteer-extra");
+const puppeteer = require("puppeteer-core");
 const StealthPlugin = require("puppeteer-extra-plugin-stealth");
 
 puppeteer.use(StealthPlugin());
@@ -11,7 +11,7 @@ const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 async function launchBrowser() {
   try {
     const browser = await puppeteer.launch({
-      executablePath: process.env.CHROME_PATH || "/usr/bin/chromium",
+      executablePath: process.env.CHROME_PATH || "/app/node_modules/@puppeteer/browsers/chrome/*/chrome",
       headless: "new",
       args: [
         "--no-sandbox",

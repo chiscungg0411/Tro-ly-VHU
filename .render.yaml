@@ -15,7 +15,7 @@ services:
       - key: PORT
         value: 10000
       - key: CHROME_PATH
-        value: /usr/bin/chromium
+        value: /app/node_modules/@puppeteer/browsers/chrome/*/chrome
     healthCheckPath: /ping
     autoDeploy: true
     dockerfilePath: Dockerfile
