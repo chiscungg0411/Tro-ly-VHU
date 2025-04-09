@@ -478,7 +478,7 @@ app.post(`/bot${TOKEN}`, (req, res) => {
 // Endpoint để kiểm tra Webhook URL (GET)
 app.get(`/bot${TOKEN}`, (req, res) => {
   console.log("Received GET request for Webhook URL");
-  res.status(200).send(`✅ Đây là Webhook URL của bot. Token: ${TOKEN}. Vui lòng sử dụng bot trên Telegram để tương tác!`);
+  res.status(200).send("Bot is alive");
 });
 
 // Endpoint để kiểm tra bot còn sống
