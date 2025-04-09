@@ -1,13 +1,17 @@
-const puppeteer = require("puppeteer-core");
+// getSchedule.js
+const puppeteer = require("puppeteer-extra");
 const StealthPlugin = require("puppeteer-extra-plugin-stealth");
-const puppeteerExtra = require("puppeteer-extra");
 
-puppeteerExtra.use(StealthPlugin());
+puppeteer.use(StealthPlugin());
 
+// Hàm tiện ích để tạo độ trễ
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// **Hàm khởi tạo trình duyệt Puppeteer**
 async function launchBrowser() {
   try {
-    const browser = await puppeteerExtra.launch({
-      executablePath: process.env.CHROME_PATH || "/usr/bin/google-chrome-stable",
+    const browser = await puppeteer.launch({
+      executablePath: "/usr/bin/chromium", // Đường dẫn đến Chromium trên Render
       headless: "new",
       args: [
         "--no-sandbox",
@@ -18,11 +22,12 @@ async function launchBrowser() {
         "--disable-background-networking",
         "--single-process",
         "--no-zygote",
-        "--disable-accelerated-2d-canvas", // Thêm để giảm tải GPU
-        "--disable-features=site-per-process", // Giảm tài nguyên
+        "--disable-accelerated-2d-canvas",
+        "--disable-features=site-per-process",
+        "--use-gl=swiftshader",
       ],
-      defaultViewport: { width: 1280, height: 720 },
-      timeout: 120000,
+      defaultViewport: { width: 800, height: 600 }, // Giảm kích thước viewport để tiết kiệm tài nguyên
+      timeout: 30000,
       pipe: true, // Dùng pipe thay vì WebSocket để tiết kiệm tài nguyên
     });
     console.log("✅ Trình duyệt Puppeteer đã khởi động.");
@@ -33,15 +38,21 @@ async function launchBrowser() {
   }
 }
 
-async function login(browser, page, username, password, retries = 5) {
+// **Hàm đăng nhập vào portal**
+async function login(page, username, password, retries = 3) {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       console.log(`🔑 Thử đăng nhập lần ${attempt}...`);
       await page.goto("https://portal.vhu.edu.vn/login", {
         waitUntil: "networkidle2",
-        timeout: 120000,
+        timeout: 60000,
       });
       console.log("✅ Trang đăng nhập đã tải.");
+
+      const hasCaptcha = await page.evaluate(() => !!document.querySelector("iframe[src*='captcha']"));
+      if (hasCaptcha) {
+        throw new Error("Trang yêu cầu CAPTCHA, không thể đăng nhập tự động.");
+      }
 
       await page.waitForSelector("input[name='email']", { timeout: 60000 });
       await page.type("input[name='email']", username, { delay: 50 });
@@ -57,19 +68,13 @@ async function login(browser, page, username, password, retries = 5) {
       await page.click("button[type='submit']");
       console.log("⏳ Đang chờ phản hồi sau đăng nhập...");
 
-      await page.waitForNavigation({ waitUntil: "networkidle2", timeout: 120000 });
+      await page.waitForNavigation({ waitUntil: "networkidle2", timeout: 60000 });
       const finalUrl = page.url();
       console.log(`🌐 URL sau đăng nhập: ${finalUrl}`);
 
-      const content = await page.content();
       if (finalUrl.includes("/login")) {
-        console.log(`📄 Nội dung trang sau đăng nhập thất bại: ${content.slice(0, 500)}...`);
         const errorMessage = await page.evaluate(() => {
-          if (document.body.innerText.includes("Username or password is incorrect")) {
-            return "Sai tên đăng nhập hoặc mật khẩu.";
-          } else if (document.querySelector("iframe[src*='captcha']")) {
-            return "Yêu cầu CAPTCHA, không thể xử lý tự động.";
-          }
+          if (document.body.innerText.includes("Username or password is incorrect")) return "Sai tên đăng nhập hoặc mật khẩu.";
           return "Đăng nhập thất bại (lỗi không xác định).";
         });
         throw new Error(`Đăng nhập thất bại: ${errorMessage}`);
@@ -80,20 +85,18 @@ async function login(browser, page, username, password, retries = 5) {
     } catch (error) {
       console.error(`❌ Lỗi đăng nhập lần ${attempt}:`, error.message);
       if (attempt === retries) throw new Error(`Đăng nhập thất bại sau ${retries} lần: ${error.message}`);
-
       console.log("⏳ Thử lại sau 5 giây...");
       await page.close();
-      await browser.close();
-      browser = await launchBrowser();
-      page = await browser.newPage();
+      await delay(5000);
+      page = await (await launchBrowser()).newPage();
     }
   }
 }
 
+// **Hàm lấy lịch học**
 async function getSchedule(weekOffset = 0) {
-  let browser = await launchBrowser();
-  let page = await browser.newPage();
-
+  const browser = await launchBrowser();
+  const page = await browser.newPage();
   try {
     await page.setRequestInterception(true);
     page.on("request", (req) => {
@@ -101,57 +104,50 @@ async function getSchedule(weekOffset = 0) {
       else req.continue();
     });
 
-    await login(browser, page, process.env.VHU_EMAIL, process.env.VHU_PASSWORD);
+    await login(page, process.env.VHU_EMAIL, process.env.VHU_PASSWORD);
     console.log("🏠 Điều hướng đến trang chủ sinh viên...");
     await page.goto("https://portal.vhu.edu.vn/student", {
       waitUntil: "networkidle2",
-      timeout: 120000,
+      timeout: 60000,
     });
     console.log(`🌐 URL sau khi vào trang chủ: ${page.url()}`);
-
-    const homeContent = await page.content();
-    console.log(`📄 Nội dung trang chủ: ${homeContent.slice(0, 500)}...`);
 
     console.log("📅 Điều hướng trực tiếp đến lịch học...");
     await page.goto("https://portal.vhu.edu.vn/student/schedules", {
       waitUntil: "networkidle2",
-      timeout: 120000,
+      timeout: 60000,
     });
     console.log(`🌐 URL sau khi truy cập lịch học: ${page.url()}`);
 
+    console.log("⏳ Đang chờ bảng lịch học tải...");
     await page.waitForSelector("#psc-table-head", { timeout: 30000 }).catch(async () => {
       const content = await page.content();
-      throw new Error(`Không tìm thấy #psc-table-head sau 30 giây. Nội dung trang: ${content.slice(0, 500)}...`);
+      throw new Error(`Không tìm thấy #psc-table-head. Nội dung trang: ${content.slice(0, 500)}...`);
     });
 
-    const scheduleContent = await page.content();
-    console.log(`📄 Nội dung trang lịch học: ${scheduleContent.slice(0, 500)}...`);
-
-    const weekButtons = await page.$$(".MuiButton-containedPrimary");
-    if (weekButtons.length > 0) {
-      if (weekOffset === 1 && weekButtons[2]) {
-        console.log("🔜 Nhấn nút 'SkipNext' để lấy tuần sau...");
+    if (weekOffset === 1) {
+      const weekButtons = await page.$$(".MuiButton-containedPrimary");
+      if (weekButtons[2]) {
         await weekButtons[2].click();
-        await page.waitForTimeout(5000);
-      } else if (weekButtons[1]) {
-        console.log("⏳ Nhấn nút 'Hiện tại' để lấy tuần này...");
-        await weekButtons[1].click();
-        await page.waitForTimeout(5000);
+        console.log("🔜 Đã chọn tuần sau.");
+        await delay(5000);
+      } else {
+        throw new Error("Không tìm thấy nút 'Tuần sau' trên trang.");
       }
-    } else {
-      console.log("⚠️ Không tìm thấy nút chọn tuần, dùng tuần mặc định.");
     }
 
     const scheduleData = await page.evaluate(() => {
       const table = document.querySelector("#psc-table-head");
       if (!table) throw new Error("Không tìm thấy bảng lịch học!");
 
-      const headers = Array.from(table.querySelectorAll("thead th")).map((th) =>
-        th.textContent.trim()
-      );
+      const headers = Array.from(table.querySelectorAll("thead th")).map((th) => {
+        const text = th.innerHTML.trim();
+        const [thu, ngay] = text.split("<br>");
+        return `${thu} - ${ngay}`;
+      });
       const days = headers.slice(1);
-      const schedule = {};
 
+      const schedule = {};
       days.forEach((day, dayIndex) => {
         schedule[day] = [];
         const cells = table.querySelectorAll(`tbody td:nth-child(${dayIndex + 2})`);
@@ -159,30 +155,30 @@ async function getSchedule(weekOffset = 0) {
           const detail = cell.querySelector(".DetailSchedule");
           if (detail) {
             const spans = detail.querySelectorAll("span");
+            const subjectFull = spans[1]?.textContent.trim() || "Không rõ";
+            const subjectMatch = subjectFull.match(/(.*) \((.*)\)/);
             schedule[day].push({
               room: spans[0]?.textContent.trim() || "Không rõ",
-              subject: spans[1]?.textContent.trim() || "Không rõ",
-              classCode: spans[2]?.textContent.replace("LHP: ", "").trim() || "Không rõ",
+              subject: subjectMatch ? subjectMatch[1] : subjectFull,
+              classCode: subjectMatch ? subjectMatch[2] : "Không rõ",
               periods: spans[4]?.textContent.replace("Tiết: ", "").trim() || "Không rõ",
               startTime: spans[5]?.textContent.replace("Giờ bắt đầu: ", "").trim() || "Không rõ",
-              professor: spans[6]?.textContent.replace("GV: ", "").trim() || "Không rõ",
+              professor: spans[6]?.textContent.replace("GV: ", "").trim() || "",
+              email: spans[7]?.textContent.replace("Email: ", "").trim() || "",
             });
           }
         });
       });
-
-      const weekInfo = document.querySelector(".MuiSelect-select")?.textContent.trim() ||
-        days[0].split("\n")[1] + " - " + days[days.length - 1].split("\n")[1];
-      return { schedule, week: weekInfo };
+      return { schedule, week: "này của bạn" };
     });
 
     console.log("✅ Đã lấy lịch học.");
-    await browser.close();
     return scheduleData;
   } catch (error) {
     console.error("❌ Lỗi trong getSchedule:", error.message);
-    await browser.close();
     throw error;
+  } finally {
+    await browser.close();
   }
 }
 

@@ -1,11 +1,11 @@
 require("dotenv").config();
 const TelegramBot = require("node-telegram-bot-api");
 const express = require("express");
-const puppeteer = require("puppeteer-core");
+const puppeteer = require("puppeteer-extra");
 const StealthPlugin = require("puppeteer-extra-plugin-stealth");
-const puppeteerExtra = require("puppeteer-extra");
+const { getSchedule } = require("./getSchedule"); // Import hàm getSchedule
 
-puppeteerExtra.use(StealthPlugin());
+puppeteer.use(StealthPlugin());
 
 // Hàm tiện ích để tạo độ trễ
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -19,15 +19,27 @@ const bot = new TelegramBot(TOKEN);
 process.on("unhandledRejection", (reason, promise) => {
   console.error("❌ Unhandled Rejection at:", promise, "reason:", reason);
 });
+
 process.on("uncaughtException", (error) => {
   console.error("❌ Uncaught Exception:", error.message);
 });
 
-// **Hàm khởi tạo trình duyệt Puppeteer (tối ưu cho Heroku)**
+// **Xử lý tín hiệu SIGTERM**
+process.on("SIGTERM", () => {
+  console.log("Received SIGTERM. Performing graceful shutdown...");
+  process.exit(0);
+});
+
+process.on("SIGINT", () => {
+  console.log("Received SIGINT. Performing graceful shutdown...");
+  process.exit(0);
+});
+
+// **Hàm khởi tạo trình duyệt Puppeteer**
 async function launchBrowser() {
   try {
-    const browser = await puppeteerExtra.launch({
-      executablePath: process.env.CHROME_PATH || "/app/.apt/usr/bin/google-chrome", // Đường dẫn Chrome trên Heroku
+    const browser = await puppeteer.launch({
+      executablePath: "/usr/bin/chromium", // Đường dẫn đến Chromium trên Render
       headless: "new",
       args: [
         "--no-sandbox",
@@ -40,11 +52,11 @@ async function launchBrowser() {
         "--no-zygote",
         "--disable-accelerated-2d-canvas",
         "--disable-features=site-per-process",
-        "--use-gl=swiftshader", // Dùng phần mềm render để giảm tải
+        "--use-gl=swiftshader",
       ],
-      defaultViewport: { width: 800, height: 600 }, // Giảm độ phân giải
-      timeout: 30000, // Giảm timeout
-      pipe: true, // Tiết kiệm tài nguyên
+      defaultViewport: { width: 800, height: 600 }, // Giảm kích thước viewport để tiết kiệm tài nguyên
+      timeout: 30000,
+      pipe: true, // Dùng pipe thay vì WebSocket để tiết kiệm tài nguyên
     });
     console.log("✅ Trình duyệt Puppeteer đã khởi động.");
     return browser;
@@ -55,13 +67,13 @@ async function launchBrowser() {
 }
 
 // **Hàm đăng nhập vào portal**
-async function login(page, username, password, retries = 5) {
+async function login(page, username, password, retries = 3) {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       console.log(`🔑 Thử đăng nhập lần ${attempt}...`);
       await page.goto("https://portal.vhu.edu.vn/login", {
-        waitUntil: "networkidle0",
-        timeout: 60000, // Giảm timeout
+        waitUntil: "networkidle2",
+        timeout: 60000,
       });
       console.log("✅ Trang đăng nhập đã tải.");
 
@@ -71,9 +83,9 @@ async function login(page, username, password, retries = 5) {
       }
 
       await page.waitForSelector("input[name='email']", { timeout: 60000 });
-      await page.type("input[name='email']", username, { delay: 100 });
+      await page.type("input[name='email']", username, { delay: 50 });
       await page.waitForSelector("input[name='password']", { timeout: 60000 });
-      await page.type("input[name='password']", password, { delay: 100 });
+      await page.type("input[name='password']", password, { delay: 50 });
       console.log("✍️ Đã nhập thông tin đăng nhập.");
 
       await page.setUserAgent(
@@ -84,7 +96,7 @@ async function login(page, username, password, retries = 5) {
       await page.click("button[type='submit']");
       console.log("⏳ Đang chờ phản hồi sau đăng nhập...");
 
-      await page.waitForNavigation({ waitUntil: "networkidle0", timeout: 60000 });
+      await page.waitForNavigation({ waitUntil: "networkidle2", timeout: 60000 });
       const finalUrl = page.url();
       console.log(`🌐 URL sau đăng nhập: ${finalUrl}`);
 
@@ -109,89 +121,6 @@ async function login(page, username, password, retries = 5) {
   }
 }
 
-// **Hàm lấy lịch học**
-async function getSchedule(weekOffset = 0) {
-  const browser = await launchBrowser();
-  const page = await browser.newPage();
-  try {
-    await login(page, process.env.VHU_EMAIL, process.env.VHU_PASSWORD);
-    console.log("🏠 Điều hướng đến trang chủ sinh viên...");
-    await page.goto("https://portal.vhu.edu.vn/student", {
-      waitUntil: "networkidle0",
-      timeout: 60000,
-    });
-    console.log(`🌐 URL sau khi vào trang chủ: ${page.url()}`);
-
-    console.log("📅 Điều hướng trực tiếp đến lịch học...");
-    await page.goto("https://portal.vhu.edu.vn/student/schedules", {
-      waitUntil: "networkidle0",
-      timeout: 60000,
-    });
-    console.log(`🌐 URL sau khi truy cập lịch học: ${page.url()}`);
-
-    console.log("⏳ Đang chờ bảng lịch học tải...");
-    await page.waitForSelector("#psc-table-head", { timeout: 60000 }).catch(async () => {
-      const content = await page.content();
-      throw new Error(`Không tìm thấy #psc-table-head. Nội dung trang: ${content.slice(0, 500)}...`);
-    });
-
-    if (weekOffset === 1) {
-      const weekButtons = await page.$$(".MuiButton-containedPrimary");
-      if (weekButtons[2]) {
-        await weekButtons[2].click();
-        console.log("🔜 Đã chọn tuần sau.");
-        await delay(5000);
-      } else {
-        throw new Error("Không tìm thấy nút 'Tuần sau' trên trang.");
-      }
-    }
-
-    const scheduleData = await page.evaluate(() => {
-      const table = document.querySelector("#psc-table-head");
-      if (!table) throw new Error("Không tìm thấy bảng lịch học!");
-
-      const headers = Array.from(table.querySelectorAll("thead th")).map((th) => {
-        const text = th.innerHTML.trim();
-        const [thu, ngay] = text.split("<br>");
-        return `${thu} - ${ngay}`;
-      });
-      const days = headers.slice(1);
-
-      const schedule = {};
-      days.forEach((day, dayIndex) => {
-        schedule[day] = [];
-        const cells = table.querySelectorAll(`tbody td:nth-child(${dayIndex + 2})`);
-        cells.forEach((cell) => {
-          const detail = cell.querySelector(".DetailSchedule");
-          if (detail) {
-            const spans = detail.querySelectorAll("span");
-            const subjectFull = spans[1]?.textContent.trim() || "Không rõ";
-            const subjectMatch = subjectFull.match(/(.*) \((.*)\)/);
-            schedule[day].push({
-              room: spans[0]?.textContent.trim() || "Không rõ",
-              subject: subjectMatch ? subjectMatch[1] : subjectFull,
-              classCode: subjectMatch ? subjectMatch[2] : "Không rõ",
-              periods: spans[4]?.textContent.replace("Tiết: ", "").trim() || "Không rõ",
-              startTime: spans[5]?.textContent.replace("Giờ bắt đầu: ", "").trim() || "Không rõ",
-              professor: spans[6]?.textContent.replace("GV: ", "").trim() || "",
-              email: spans[7]?.textContent.replace("Email: ", "").trim() || "",
-            });
-          }
-        });
-      });
-      return { schedule, week: "này của bạn" };
-    });
-
-    console.log("✅ Đã lấy lịch học.");
-    return scheduleData;
-  } catch (error) {
-    console.error("❌ Lỗi trong getSchedule:", error.message);
-    throw error;
-  } finally {
-    await browser.close();
-  }
-}
-
 // **Hàm lấy thông báo**
 async function getNotifications() {
   const browser = await launchBrowser();
@@ -200,20 +129,20 @@ async function getNotifications() {
     await login(page, process.env.VHU_EMAIL, process.env.VHU_PASSWORD);
     console.log("🏠 Điều hướng đến trang chủ sinh viên...");
     await page.goto("https://portal.vhu.edu.vn/student", {
-      waitUntil: "networkidle0",
+      waitUntil: "networkidle2",
       timeout: 60000,
     });
     console.log(`🌐 URL sau khi vào trang chủ: ${page.url()}`);
 
     console.log("🔔 Điều hướng trực tiếp đến thông báo...");
     await page.goto("https://portal.vhu.edu.vn/student/index", {
-      waitUntil: "networkidle0",
+      waitUntil: "networkidle2",
       timeout: 60000,
     });
     console.log(`🌐 URL sau khi truy cập thông báo: ${page.url()}`);
 
     console.log("⏳ Đang chờ bảng thông báo tải...");
-    await page.waitForSelector(".MuiTableBody-root", { timeout: 60000 }).catch(async () => {
+    await page.waitForSelector(".MuiTableBody-root", { timeout: 30000 }).catch(async () => {
       const content = await page.content();
       throw new Error(`Không tìm thấy .MuiTableBody-root. Nội dung trang: ${content.slice(0, 500)}...`);
     });
@@ -249,18 +178,18 @@ async function getSocialWork() {
     await login(page, process.env.VHU_EMAIL, process.env.VHU_PASSWORD);
     console.log("🏠 Điều hướng đến trang chủ sinh viên...");
     await page.goto("https://portal.vhu.edu.vn/student", {
-      waitUntil: "networkidle0",
+      waitUntil: "networkidle2",
       timeout: 60000,
     });
 
     console.log("📋 Điều hướng trực tiếp đến công tác xã hội...");
     await page.goto("https://portal.vhu.edu.vn/student/congtacxahoi", {
-      waitUntil: "networkidle0",
+      waitUntil: "networkidle2",
       timeout: 60000,
     });
     console.log(`🌐 URL sau khi truy cập: ${page.url()}`);
 
-    await page.waitForSelector(".MuiTableBody-root", { timeout: 60000 }).catch(async () => {
+    await page.waitForSelector(".MuiTableBody-root", { timeout: 30000 }).catch(async () => {
       const content = await page.content();
       throw new Error(`Không tìm thấy bảng công tác xã hội. Nội dung trang: ${content.slice(0, 500)}...`);
     });
@@ -300,13 +229,13 @@ async function getCredits() {
     await login(page, process.env.VHU_EMAIL, process.env.VHU_PASSWORD);
     console.log("🏠 Điều hướng đến trang chủ sinh viên...");
     await page.goto("https://portal.vhu.edu.vn/student", {
-      waitUntil: "networkidle0",
+      waitUntil: "networkidle2",
       timeout: 60000,
     });
 
     console.log("📊 Điều hướng trực tiếp đến trang điểm...");
     await page.goto("https://portal.vhu.edu.vn/student/marks", {
-      waitUntil: "networkidle0",
+      waitUntil: "networkidle2",
       timeout: 60000,
     });
     console.log(`🌐 URL sau khi truy cập điểm: ${page.url()}`);
@@ -374,13 +303,13 @@ async function getExamSchedule() {
     await login(page, process.env.VHU_EMAIL, process.env.VHU_PASSWORD);
     console.log("🏠 Điều hướng đến trang chủ sinh viên...");
     await page.goto("https://portal.vhu.edu.vn/student", {
-      waitUntil: "networkidle0",
+      waitUntil: "networkidle2",
       timeout: 60000,
     });
 
     console.log("📝 Điều hướng đến trang lịch thi...");
     await page.goto("https://portal.vhu.edu.vn/student/exam", {
-      waitUntil: "networkidle0",
+      waitUntil: "networkidle2",
       timeout: 60000,
     });
     console.log(`🌐 URL sau khi truy cập lịch thi: ${page.url()}`);
@@ -450,13 +379,13 @@ async function getAccountFees() {
     await login(page, process.env.VHU_EMAIL, process.env.VHU_PASSWORD);
     console.log("🏠 Điều hướng đến trang chủ sinh viên...");
     await page.goto("https://portal.vhu.edu.vn/student", {
-      waitUntil: "networkidle0",
+      waitUntil: "networkidle2",
       timeout: 60000,
     });
 
     console.log("💰 Điều hướng đến trang tài chính...");
     await page.goto("https://portal.vhu.edu.vn/student/accountfees", {
-      waitUntil: "networkidle0",
+      waitUntil: "networkidle2",
       timeout: 60000,
     });
     console.log(`🌐 URL sau khi truy cập tài chính: ${page.url()}`);
@@ -479,9 +408,6 @@ async function getAccountFees() {
       }
 
       const cells = headerRow.querySelectorAll("th");
-      console.log(`Số cột tìm thấy: ${cells.length}`);
-      console.log("Nội dung các cột trong thead:", Array.from(cells).map(cell => cell.outerHTML));
-
       let mustPay = 0, paid = 0, debt = 0;
       cells.forEach((cell) => {
         const text = cell.innerText.replace(/[^\d]/g, "");
@@ -513,24 +439,39 @@ async function getAccountFees() {
 }
 
 // **Cấu hình Webhook**
-app.get("/ping", (req, res) => res.status(200).send("Bot is alive!"));
+const PORT = process.env.PORT || 10000;
+const APP_NAME = process.env.HEROKU_APP_NAME || "tro-ly-vhu";
+const WEBHOOK_URL = `https://${APP_NAME}.onrender.com/bot${TOKEN}`;
 
+// Endpoint để Telegram gửi tin nhắn đến
 app.post(`/bot${TOKEN}`, (req, res) => {
   bot.processUpdate(req.body);
   res.sendStatus(200);
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, async () => {
+// Endpoint để kiểm tra bot còn sống
+app.get("/ping", (req, res) => res.status(200).send("Bot is alive!"));
+
+// Endpoint để đánh thức bot
+app.get("/wake-up", (req, res) => {
+  console.log("⏰ Chatbot được đánh thức bởi cron-job.org!");
+  res.status(200).send("Chatbot is awake!");
+});
+
+// Khởi động server và thiết lập Webhook
+const server = app.listen(PORT, '0.0.0.0', async () => {
   console.log(`Server chạy trên port ${PORT}`);
   try {
-    const webhookUrl = `https://${process.env.HEROKU_APP_NAME}.herokuapp.com/bot${TOKEN}`;
-    await bot.setWebHook(webhookUrl);
-    console.log(`✅ Webhook đã được đặt: ${webhookUrl}`);
+    await bot.setWebHook(WEBHOOK_URL);
+    console.log(`✅ Webhook đã được đặt: ${WEBHOOK_URL}`);
   } catch (error) {
-    console.error("❌ Lỗi khi đặt Webhook:", error.message);
+    console.error("❌ Lỗi thiết lập Webhook:", error.message);
   }
 });
+
+// Tăng timeout để tránh bị ngắt kết nối
+server.keepAliveTimeout = 120000;
+server.headersTimeout = 120000;
 
 // **Xử lý lệnh Telegram**
 bot.onText(/\/start/, (msg) => {
@@ -705,7 +646,6 @@ bot.onText(/\/taichinh/, async (msg) => {
     const { mustPay, paid, debt } = await getAccountFees();
 
     const formatNumber = (num) => num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-
     let message = `💵 **Thông tin tài chính của bạn:**\n------------------------------------\n`;
     message += `💸 Học phí phải đóng: **${formatNumber(mustPay)} VNĐ**\n`;
     message += `💲 Học phí đã đóng: **${formatNumber(paid)} VNĐ**\n`;
