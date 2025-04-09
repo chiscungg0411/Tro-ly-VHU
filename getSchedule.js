@@ -16,19 +16,19 @@ async function launchBrowser() {
         "--disable-gpu",
         "--disable-extensions",
         "--disable-background-networking",
-        "--no-zygote",
         "--single-process",
-        "--disable-accelerated-2d-canvas",
-        "--disable-features=site-per-process",
+        "--no-zygote",
+        "--disable-accelerated-2d-canvas", // Thêm để giảm tải GPU
+        "--disable-features=site-per-process", // Giảm tài nguyên
       ],
       defaultViewport: { width: 1280, height: 720 },
-      timeout: 60000,
-      protocolTimeout: 120000, // 👈 Sửa lỗi timeout khi setAutoAttach
+      timeout: 120000,
+      pipe: true, // Dùng pipe thay vì WebSocket để tiết kiệm tài nguyên
     });
     console.log("✅ Trình duyệt Puppeteer đã khởi động.");
     return browser;
   } catch (error) {
-    console.error("❌ Lỗi khởi động trình duyệt:", error);
+    console.error("❌ Lỗi khởi động trình duyệt:", error.message);
     throw new Error("Không thể khởi động trình duyệt.");
   }
 }
