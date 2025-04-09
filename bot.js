@@ -468,6 +468,12 @@ const WEBHOOK_URL = `https://${APP_NAME}.onrender.com/bot${TOKEN}`;
 console.log(`🔑 TELEGRAM_BOT_TOKEN: ${TOKEN}`);
 console.log(`🌐 WEBHOOK_URL: ${WEBHOOK_URL}`);
 
+// Endpoint mặc định để kiểm tra server
+app.get('/', (req, res) => {
+  console.log("Received GET request for root URL");
+  res.status(200).send("Server is running!");
+});
+
 // Endpoint để Telegram gửi tin nhắn đến (POST)
 app.post(`/bot${TOKEN}`, (req, res) => {
   console.log("Received POST request from Telegram");
