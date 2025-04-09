@@ -10,7 +10,20 @@ puppeteer.use(StealthPlugin());
 // Hàm tiện ích để tạo độ trễ
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// Kiểm tra các biến môi trường cần thiết
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const VHU_EMAIL = process.env.VHU_EMAIL;
+const VHU_PASSWORD = process.env.VHU_PASSWORD;
+
+if (!TOKEN) {
+  console.error("❌ Lỗi: TELEGRAM_BOT_TOKEN không được thiết lập trong biến môi trường.");
+  process.exit(1);
+}
+if (!VHU_EMAIL || !VHU_PASSWORD) {
+  console.error("❌ Lỗi: VHU_EMAIL hoặc VHU_PASSWORD không được thiết lập trong biến môi trường.");
+  process.exit(1);
+}
+
 const app = express();
 app.use(express.json());
 const bot = new TelegramBot(TOKEN);
@@ -443,10 +456,19 @@ const PORT = process.env.PORT || 10000;
 const APP_NAME = process.env.HEROKU_APP_NAME || "tro-ly-vhu";
 const WEBHOOK_URL = `https://${APP_NAME}.onrender.com/bot${TOKEN}`;
 
-// Endpoint để Telegram gửi tin nhắn đến
+// Log để kiểm tra token và Webhook URL
+console.log(`🔑 TELEGRAM_BOT_TOKEN: ${TOKEN}`);
+console.log(`🌐 WEBHOOK_URL: ${WEBHOOK_URL}`);
+
+// Endpoint để Telegram gửi tin nhắn đến (POST)
 app.post(`/bot${TOKEN}`, (req, res) => {
   bot.processUpdate(req.body);
   res.sendStatus(200);
+});
+
+// Endpoint để kiểm tra Webhook URL (GET)
+app.get(`/bot${TOKEN}`, (req, res) => {
+  res.status(200).send(`✅ Đây là Webhook URL của bot. Token: ${TOKEN}. Vui lòng sử dụng bot trên Telegram để tương tác!`);
 });
 
 // Endpoint để kiểm tra bot còn sống
