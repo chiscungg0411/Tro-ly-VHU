@@ -1,14 +1,12 @@
-# Sử dụng base image Node.js
 FROM node:18-slim
 
-# Cài đặt các công cụ cần thiết và Chromium
 RUN apt-get update && apt-get install -y \
     wget \
     gnupg \
     && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
     && sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' \
     && apt-get update \
-    && apt-get install -y google-chrome-stable \
+    && (apt-get install -y google-chrome-stable || apt-get install -y chromium) \
     && apt-get install -y --no-install-recommends \
         fonts-liberation \
         libasound2 \
@@ -32,19 +30,19 @@ RUN apt-get update && apt-get install -y \
         libxshmfence1 \
         libxtst6 \
         xdg-utils \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && echo "Checking Chrome path..." \
+    && which google-chrome-stable || echo "google-chrome-stable not found" \
+    && which google-chrome || echo "google-chrome not found" \
+    && which chromium || echo "chromium not found"
 
-# Thiết lập thư mục làm việc
 WORKDIR /app
 
-# Sao chép file dự án
 COPY package*.json ./
 RUN npm install
 COPY . .
 
-# Cấu hình biến môi trường
-ENV CHROME_PATH=/usr/bin/google-chrome-stable
+ENV CHROME_PATH=/usr/bin/chromium
 ENV PORT=10000
 
-# Chạy bot
 CMD ["npm", "start"]

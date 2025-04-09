@@ -11,7 +11,7 @@ const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 async function launchBrowser() {
   try {
     const browser = await puppeteer.launch({
-      executablePath: process.env.CHROME_PATH || "/usr/bin/google-chrome-stable",
+      executablePath: process.env.CHROME_PATH || "/usr/bin/chromium",
       headless: "new",
       args: [
         "--no-sandbox",
@@ -26,9 +26,9 @@ async function launchBrowser() {
         "--disable-features=site-per-process",
         "--use-gl=swiftshader",
       ],
-      defaultViewport: { width: 800, height: 600 }, // Giảm kích thước viewport để tiết kiệm tài nguyên
+      defaultViewport: { width: 800, height: 600 },
       timeout: 30000,
-      pipe: true, // Dùng pipe thay vì WebSocket để tiết kiệm tài nguyên
+      pipe: true,
     });
     console.log("✅ Trình duyệt Puppeteer đã khởi động.");
     return browser;
