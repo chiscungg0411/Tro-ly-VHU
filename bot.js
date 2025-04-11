@@ -15,6 +15,22 @@ const app = express();
 app.use(express.json());
 const bot = new TelegramBot(TOKEN, { polling: { interval: 1000, autoStart: false } });
 
+// Thêm vào đầu file bot.js, sau phần import
+process.on("SIGTERM", async () => {
+  console.log("📴 Nhận tín hiệu SIGTERM, đang dừng bot...");
+  try {
+    if (bot.isPolling()) {
+      await bot.stopPolling({ dropPendingUpdates: true });
+      console.log("✅ Đã dừng polling Telegram.");
+    }
+    console.log("✅ Bot đã dừng an toàn.");
+    process.exit(0);
+  } catch (error) {
+    console.error("❌ Lỗi khi dừng bot:", error.message);
+    process.exit(1);
+  }
+});
+
 // **Xử lý lỗi hệ thống**
 process.on("unhandledRejection", (reason, promise) => {
   console.error("❌ Unhandled Rejection at:", promise, "reason:", reason);
@@ -36,11 +52,15 @@ async function launchBrowser() {
         "--disable-gpu",
         "--disable-extensions",
         "--disable-background-networking",
-        "--single-process",
         "--no-zygote",
+        "--disable-accelerated-2d-canvas",
+        "--disable-features=site-per-process",
+        "--disable-background-timer-throttling",
+        "--disable-renderer-backgrounding",
       ],
       defaultViewport: { width: 1280, height: 720 },
-      timeout: 120000,
+      timeout: 60000, // Giảm timeout từ 120000 xuống 60000
+      pipe: true, // Sử dụng pipe để tiết kiệm tài nguyên
     });
     console.log("✅ Trình duyệt Puppeteer đã khởi động.");
     return browser;
@@ -524,10 +544,12 @@ app.get("/wake-up", (req, res) => {
 app.listen(PORT, async () => {
   console.log(`Server chạy trên port ${PORT}`);
   try {
-    console.log("⏹️ Đang dừng polling cũ...");
-    await bot.stopPolling({ dropPendingUpdates: true });
+    if (bot.isPolling()) {
+      console.log("⏹️ Bot đang polling, dừng polling cũ...");
+      await bot.stopPolling({ dropPendingUpdates: true });
+    }
     console.log("✅ Polling cũ đã dừng.");
-    await bot.startPolling({ polling: { interval: 1000, restart: true } });
+    await bot.startPolling({ polling: { interval: 2000, restart: true } });
     console.log("✅ Bot đang chạy ở chế độ polling...");
   } catch (error) {
     console.error("❌ Lỗi khởi động polling:", error.message);
