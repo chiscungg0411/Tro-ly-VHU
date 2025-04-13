@@ -556,15 +556,16 @@ bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
   bot.sendMessage(
     chatId,
-    "👋 Xin chào! Mình là Trợ lý VHU.\n" +
-      "📅 /tuannay - Lấy lịch học tuần này.\n" +
-      "📅 /tuansau - Lấy lịch học tuần sau.\n" +
-      "🔔 /thongbao - Lấy danh sách thông báo.\n" +
-      "📝 /lichthi - Lấy lịch thi học kỳ này  \n" +
-      "📋 /congtac - Lấy danh sách công tác xã hội.\n" +
-      "📊 /tinchi - Tổng số tín chỉ và điểm TB đã đạt.\n" +
-      "💵 /taichinh - Lấy thông tin tài chính sinh viên.\n" +
-      "💡Mẹo: Nhấn nút Menu 📋 bên cạnh để chọn lệnh nhanh hơn!"
+    "👋 Xin chào Chí Cường! Mình là Trợ lý 𝗩𝗛𝗨.\n" +
+      "⌨️ Các lệnh tương tác với trợ lý 𝗩𝗛𝗨 như sau:\n" +
+      "📅 /𝘁𝘂𝗮𝗻𝗻𝗮𝘆 - Lấy lịch học tuần này.\n" +
+      "📅 /𝘁𝘂𝗮𝗻𝘀𝗮𝘂 - Lấy lịch học tuần sau.\n" +
+      "🔔 /𝘁𝗵𝗼𝗻𝗴𝗯𝗮𝗼 - Lấy danh sách thông báo.\n" +
+      "📝 /𝗹𝗶𝗰𝗵𝘁𝗵𝗶 - Lấy lịch thi học kỳ này  \n" +
+      "📋 /𝗰𝗼𝗻𝗴𝘁𝗮𝗰 - Lấy danh sách công tác xã hội.\n" +
+      "📊 /𝘁𝗶𝗻𝗰𝗵𝗶 - Tổng số tín chỉ và điểm TB đã đạt.\n" +
+      "💵 /𝘁𝗮𝗶𝗰𝗵𝗶𝗻𝗵 - Lấy thông tin tài chính sinh viên.\n" +
+      "💡Mẹo: Nhấn nút ☰ 𝗠𝗲𝗻𝘂 bên cạnh để chọn lệnh nhanh hơn!"
   );
 });
 
@@ -573,7 +574,7 @@ bot.onText(/\/tuannay/, async (msg) => {
   bot.sendMessage(chatId, "📅 Đang lấy lịch học tuần này, vui lòng chờ trong giây lát ⌛...");
   try {
     const lichHoc = await getSchedule(0);
-    let message = `📅 **Lịch học tuần ${lichHoc.week}**\n------------------------------------\n`;
+    let message = `📅 **Lịch học tuần này của bạn:**\n------------------------------------\n`;
     let hasSchedule = false;
 
     for (const [ngay, monHocs] of Object.entries(lichHoc.schedule)) {
@@ -595,7 +596,7 @@ bot.onText(/\/tuannay/, async (msg) => {
     }
 
     if (!hasSchedule) {
-      message = `📅 **Lịch học tuần ${lichHoc.week}**\n------------------------------------\n❌ Không có lịch học trong tuần này.`;
+      message = `📅 **Lịch học tuần này của bạn:**\n------------------------------------\n❌ Không có lịch học trong tuần này.`;
     }
 
     bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
@@ -609,7 +610,7 @@ bot.onText(/\/tuansau/, async (msg) => {
   bot.sendMessage(chatId, "📅 Đang lấy lịch học tuần sau, vui lòng chờ trong giây lát ⌛...");
   try {
     const lichHoc = await getSchedule(1);
-    let message = `📅 **Lịch học tuần sau**\n------------------------------------\n`;
+    let message = `📅 **Lịch học tuần sau của bạn:**\n------------------------------------\n`;
     let hasSchedule = false;
 
     for (const [ngay, monHocs] of Object.entries(lichHoc.schedule)) {
