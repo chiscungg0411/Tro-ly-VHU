@@ -177,16 +177,19 @@ async function getStudentInfo() {
           }
         });
 
-        // 4. Thông tin người liên hệ
+        // 4. Thông tin người liên hệ (đặc biệt)
         const relativeRows = tables[3].querySelectorAll("tbody tr");
         relativeRows.forEach((row) => {
           const cells = row.querySelectorAll("td");
-          if (cells.length === 2) {
-            const key = cells[0].innerText.trim();
-            const value = cells[1].innerText.trim();
-            if (value) relativeInfo[key] = value;
-          }
+          cells.forEach((cell) => {
+            const title = cell.querySelector("h6")?.innerText.trim();
+            const value = cell.querySelector("p")?.innerText.trim();
+            if (title && value) {
+              relativeInfo[title] = value;
+            }
+          });
         });
+
       }
 
       return { studentInfo, contactInfo, courseInfo, relativeInfo };
@@ -638,7 +641,7 @@ bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
   bot.sendMessage(
     chatId,
-    "👋 Xin chào *Chí Cường!* Mình là Trợ lý 𝗩𝗛𝗨.\n" +
+    "👋 Xin chào Chí Cường! Mình là Trợ lý 𝗩𝗛𝗨.\n" +
       "⌨️ Các lệnh tương tác với trợ lý 𝗩𝗛𝗨 như sau:\n" +
       "------------------------------------\n" +
       "🤖 /𝘀𝘁𝗮𝗿𝘁 - Bắt đầu giao tiếp với Trợ lý 𝗩𝗛𝗨.\n" +
@@ -651,7 +654,7 @@ bot.onText(/\/start/, (msg) => {
       "📊 /𝘁𝗶𝗻𝗰𝗵𝗶 - Tổng số tín chỉ và điểm TB đã đạt.\n" +
       "💵 /𝘁𝗮𝗶𝗰𝗵𝗶𝗻𝗵 - Lấy thông tin tài chính sinh viên.\n" +
       "------------------------------------\n" +
-      "💡**Mẹo: Nhấn nút ☰ 𝗠𝗲𝗻𝘂 bên cạnh để chọn lệnh nhanh hơn!**"
+      "💡Mẹo: Nhấn nút ☰ 𝗠𝗲𝗻𝘂 bên cạnh để chọn lệnh nhanh hơn!"
   );
 });
 
@@ -692,11 +695,12 @@ bot.onText(/\/thongtin/, async (msg) => {
 
     // 4. Thông tin người liên hệ
     if (Object.keys(relativeInfo).length > 0) {
-      message += "👨‍👩‍👦 *Thông tin người liên hệ:*\n------------------------------------\n";
+      message += "👨‍👩‍👦 **Thông tin người liên hệ:**\n------------------------------------\n";
       for (const [key, value] of Object.entries(relativeInfo)) {
         message += `👨‍👩‍👦 *${key}*: ${value}\n`;
       }
     }
+
 
     bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
   } catch (error) {
