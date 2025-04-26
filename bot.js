@@ -736,7 +736,7 @@ bot.onText(/\/tuannay/, async (msg) => {
       if (monHocs.length) {
         hasSchedule = true;
         monHocs.forEach((m) => {
-          message += `📖 *Môn học: ${m.subject} – ${m.classCode}*\n` +
+          message += `📖 *Môn học:* ${m.subject} – ${m.classCode}\n` +
                      `📅 *Tiết:* ${m.periods}\n` +
                      `🕛 *Giờ bắt đầu:* ${m.startTime}\n` +
                      `📍 *Phòng học:* ${m.room}\n` +
@@ -786,7 +786,7 @@ bot.onText(/\/tuansau/, async (msg) => {
     }
 
     if (!hasSchedule) {
-      message = `📅 *Lịch học tuần sau của bạn:*\n------------------------------------\n❌ *Không có lịch học trong tuần sau*.`;
+      message = `📅 *Lịch học tuần sau của bạn:*\n------------------------------------\n❌ *Không có lịch học trong tuần sau.*`;
     }
 
     bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
