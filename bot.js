@@ -3,6 +3,8 @@ const TelegramBot = require("node-telegram-bot-api");
 const express = require("express");
 const puppeteerExtra = require("puppeteer-extra");
 const StealthPlugin = require("puppeteer-extra-plugin-stealth");
+const allowedUsers = [6825477827];
+
 
 puppeteerExtra.use(StealthPlugin());
 
@@ -650,16 +652,14 @@ app.listen(PORT, async () => {
 });
 
 bot.on('message', (msg) => {
-  console.log("📩 Nhận tin nhắn từ:", msg.from);
+    const chatId = msg.chat.id;
+    const userId = msg.from.id;
 
-  const chatId = msg.chat.id;
-  const userId = msg.from.id;
-
-  console.log(`🆔 User ID: ${userId}`);
-
-  // (Các xử lý khác của bot ở đây, ví dụ xử lý lệnh /thongtin, /tuannay, v.v...)
-});
-
+    if (!allowedUsers.includes(userId)) {
+      bot.sendMessage(chatId, "❌ Đây là bot riêng tư. Bạn không có quyền sử dụng.");
+      return;
+    }
+  });
 
 // Xử lý lệnh Telegram
 bot.onText(/\/start/, (msg) => {
