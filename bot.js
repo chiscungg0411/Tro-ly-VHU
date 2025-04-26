@@ -637,14 +637,14 @@ bot.onText(/\/thongtin/, async (msg) => {
   try {
     const { studentInfo, contactInfo } = await getStudentInfo();
 
-    let message = "👤 **Thông tin sinh viên:**\n------------------------------------\n";
+    let message = "👤 *Thông tin sinh viên:*\n------------------------------------\n";
     for (const [key, value] of Object.entries(studentInfo)) {
-      message += `🔹 *${key}*: ${value}\n`;
+      message += `👤 *${key}*: ${value}\n`;
     }
 
-    message += "\n📞 **Thông tin liên lạc:**\n------------------------------------\n";
+    message += "\n📞 *Thông tin liên lạc:*\n------------------------------------\n";
     for (const [key, value] of Object.entries(contactInfo)) {
-      message += `🔹 *${key}*: ${value}\n`;
+      message += `📞 *${key}*: ${value}\n`;
     }
 
     bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
