@@ -177,18 +177,33 @@ async function getStudentInfo() {
           }
         });
 
-        // 4. Thông tin người liên hệ (đặc biệt)
-        const relativeRows = tables[3].querySelectorAll("tbody tr");
-        relativeRows.forEach((row) => {
-          const cells = row.querySelectorAll("td");
-          cells.forEach((cell) => {
-            const title = cell.querySelector("h6")?.innerText.trim();
-            const value = cell.querySelector("p")?.innerText.trim();
-            if (title && value) {
-              relativeInfo[title] = value;
+        // 4. Thông tin người liên hệ (xử lý đặc biệt)
+    const relativeRows = tables[3].querySelectorAll("tbody tr");
+    relativeRows.forEach((row) => {
+      const cells = row.querySelectorAll("td");
+      cells.forEach((cell) => {
+        const titleElement = cell.querySelector("h6");
+        const valueElement = cell.querySelector("p");
+
+        if (titleElement && valueElement) {
+          const title = titleElement.innerText.trim();
+          const value = valueElement.innerText.trim();
+          if (title && value) {
+            relativeInfo[title] = value;
+          }
+        } else if (valueElement) {
+          // Nếu chỉ có p (không có h6), lấy text p làm value cho tiêu đề gần nhất
+          const previousTitle = cell.previousElementSibling?.querySelector("h6")?.innerText.trim();
+          if (previousTitle) {
+            const value = valueElement.innerText.trim();
+            if (value) {
+              relativeInfo[previousTitle] = value;
             }
-          });
-        });
+          }
+        }
+      });
+    });
+
 
       }
 
