@@ -120,6 +120,7 @@ async function login(page, username, password, retries = 5) {
     }
   }
 }
+
 // Hàm lấy thông tin sinh viên
 async function getStudentInfo() {
   const browser = await launchBrowser();
@@ -132,33 +133,43 @@ async function getStudentInfo() {
       timeout: 60000,
     });
 
-    console.log("⏳ Đang chờ tải bảng thông tin sinh viên...");
+    console.log("⏳ Đang chờ tải bảng thông tin...");
     await page.waitForSelector(".MuiTable-root", { timeout: 60000 });
 
-    const info = await page.evaluate(() => {
-      const getText = (selector) => {
-        const element = document.querySelector(selector);
-        return element ? element.innerText.trim() : null;
-      };
-
-      const rows = document.querySelectorAll(".MuiTable-root tbody tr");
+    const data = await page.evaluate(() => {
+      const tables = document.querySelectorAll(".MuiTable-root");
       const studentInfo = {};
-      rows.forEach((row) => {
-        const cells = row.querySelectorAll("td");
-        if (cells.length === 2) {
-          const key = cells[0].innerText.trim();
-          const value = cells[1].innerText.trim();
-          if (value && value !== "") {
-            studentInfo[key] = value;
-          }
-        }
-      });
+      const contactInfo = {};
 
-      return studentInfo;
+      if (tables.length >= 2) {
+        // Lấy bảng Thông tin sinh viên
+        const studentRows = tables[0].querySelectorAll("tbody tr");
+        studentRows.forEach((row) => {
+          const cells = row.querySelectorAll("td");
+          if (cells.length === 2) {
+            const key = cells[0].innerText.trim();
+            const value = cells[1].innerText.trim();
+            if (value) studentInfo[key] = value;
+          }
+        });
+
+        // Lấy bảng Thông tin liên lạc
+        const contactRows = tables[1].querySelectorAll("tbody tr");
+        contactRows.forEach((row) => {
+          const cells = row.querySelectorAll("td");
+          if (cells.length === 2) {
+            const key = cells[0].innerText.trim();
+            const value = cells[1].innerText.trim();
+            if (value) contactInfo[key] = value;
+          }
+        });
+      }
+
+      return { studentInfo, contactInfo };
     });
 
-    console.log("✅ Đã lấy thông tin sinh viên.");
-    return info;
+    console.log("✅ Đã lấy dữ liệu thông tin sinh viên và liên lạc.");
+    return data;
   } catch (error) {
     console.error("❌ Lỗi trong getStudentInfo:", error.message);
     throw error;
@@ -166,6 +177,7 @@ async function getStudentInfo() {
     await browser.close();
   }
 }
+
 
 // Hàm lấy lịch học
 async function getSchedule(weekOffset = 0) {
@@ -602,18 +614,18 @@ bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
   bot.sendMessage(
     chatId,
-    "👋 Xin chào **Chí Cường!** Mình là Trợ lý 𝗩𝗛𝗨.\n" +
-      "⌨️ **Các lệnh tương tác với trợ lý 𝗩𝗛𝗨 như sau:**\n" +
+    "👋 Xin chào Chí Cường! Mình là Trợ lý 𝗩𝗛𝗨.\n" +
+      "⌨️ Các lệnh tương tác với trợ lý 𝗩𝗛𝗨 như sau:\n" +
       "------------------------------------\n" +
-      "🤖 /𝘀𝘁𝗮𝗿𝘁 - **Bắt đầu giao tiếp với Trợ lý 𝗩𝗛𝗨.**\n" +
-      "🧑 /𝘁𝗵𝗼𝗻𝗴𝘁𝗶𝗻 - **Lấy thông tin cá nhân.**"+
-      "📅 /𝘁𝘂𝗮𝗻𝗻𝗮𝘆 - **Lấy lịch học tuần này.**\n" +
-      "🗓 /𝘁𝘂𝗮𝗻𝘀𝗮𝘂 - **Lấy lịch học tuần sau.**\n" +
-      "🔔 /𝘁𝗵𝗼𝗻𝗴𝗯𝗮𝗼 - **Lấy danh sách thông báo.**\n" +
-      "📝 /𝗹𝗶𝗰𝗵𝘁𝗵𝗶 - **Lấy lịch thi học kỳ này.**\n" +
-      "📋 /𝗰𝗼𝗻𝗴𝘁𝗮𝗰 - **Lấy danh sách công tác xã hội.**\n" +
-      "📊 /𝘁𝗶𝗻𝗰𝗵𝗶 - **Tổng số tín chỉ và điểm TB đã đạt.**\n" +
-      "💵 /𝘁𝗮𝗶𝗰𝗵𝗶𝗻𝗵 - **Lấy thông tin tài chính sinh viên.**\n" +
+      "🤖 /𝘀𝘁𝗮𝗿𝘁 - Bắt đầu giao tiếp với Trợ lý 𝗩𝗛𝗨.\n" +
+      "👤 /𝘁𝗵𝗼𝗻𝗴𝘁𝗶𝗻 - Lấy thông tin cá nhân.\n"+
+      "📅 /𝘁𝘂𝗮𝗻𝗻𝗮𝘆 - Lấy lịch học tuần này.\n" +
+      "🗓 /𝘁𝘂𝗮𝗻𝘀𝗮𝘂 - Lấy lịch học tuần sau.\n" +
+      "🔔 /𝘁𝗵𝗼𝗻𝗴𝗯𝗮𝗼 - Lấy danh sách thông báo.\n" +
+      "📝 /𝗹𝗶𝗰𝗵𝘁𝗵𝗶 - Lấy lịch thi học kỳ này.\n" +
+      "📋 /𝗰𝗼𝗻𝗴𝘁𝗮𝗰 - Lấy danh sách công tác xã hội.\n" +
+      "📊 /𝘁𝗶𝗻𝗰𝗵𝗶 - Tổng số tín chỉ và điểm TB đã đạt.\n" +
+      "💵 /𝘁𝗮𝗶𝗰𝗵𝗶𝗻𝗵 - Lấy thông tin tài chính sinh viên.\n" +
       "------------------------------------\n" +
       "💡**Mẹo: Nhấn nút ☰ 𝗠𝗲𝗻𝘂 bên cạnh để chọn lệnh nhanh hơn!**"
   );
@@ -621,20 +633,26 @@ bot.onText(/\/start/, (msg) => {
 
 bot.onText(/\/thongtin/, async (msg) => {
   const chatId = msg.chat.id;
-  bot.sendMessage(chatId, "📋 Đang lấy thông tin sinh viên, vui lòng chờ trong giây lát ⌛...");
+  bot.sendMessage(chatId, "👤 Đang lấy thông tin sinh viên, vui lòng chờ trong giây lát ⌛...");
   try {
-    const info = await getStudentInfo();
+    const { studentInfo, contactInfo } = await getStudentInfo();
 
     let message = "👤 **Thông tin sinh viên:**\n------------------------------------\n";
-    for (const [key, value] of Object.entries(info)) {
+    for (const [key, value] of Object.entries(studentInfo)) {
+      message += `🔹 *${key}*: ${value}\n`;
+    }
+
+    message += "\n📞 **Thông tin liên lạc:**\n------------------------------------\n";
+    for (const [key, value] of Object.entries(contactInfo)) {
       message += `🔹 *${key}*: ${value}\n`;
     }
 
     bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
   } catch (error) {
-    bot.sendMessage(chatId, `❌ Lỗi lấy thông tin sinh viên: ${error.message}`);
+    bot.sendMessage(chatId, `❌ Lỗi lấy thông tin: ${error.message}`);
   }
 });
+
 
 
 bot.onText(/\/tuannay/, async (msg) => {
