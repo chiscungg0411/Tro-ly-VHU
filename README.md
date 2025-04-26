@@ -92,6 +92,9 @@ Mọi người dùng khác sẽ nhận được thông báo:
 
 **❌ Đây là bot riêng tư. Bạn không có quyền sử dụng.**
 
+![image](https://github.com/user-attachments/assets/b356792b-b32d-4f2f-ac58-bfda8c83d314)
+
+
 ---
 
 ## 📜 Các lệnh hỗ trợ
@@ -119,5 +122,15 @@ Dự án được xây dựng với mục đích hỗ trợ sinh viên cá nhân
 ---
 
 ## 👨‍💻 Tác giả
-- Võ Chí Cường
-- Github: chiscungg0411
+**© 2025 - Võ Chí Cường**
+<p align="center">
+  <a href="https://github.com/chiscungg0411" target="_blank">
+    <img src="https://img.icons8.com/?size=100&id=12598&format=png&color=ffffff" alt="GitHub" style="border-radius:50%; margin-right:10px; height:60px;" />
+  </a>
+  <a href="https://facebook.com/ChiCuongDeyy" target="_blank">
+    <img src="https://img.icons8.com/?size=100&id=118468&format=png&color=0865FE" alt="Facebook" style="border-radius:50%; margin-right:10px; height:60px;" />
+  </a>
+  <a href="https://instagram.com/vochicuong_" target="_blank">
+    <img src="https://img.icons8.com/ios/40/E4405F/instagram-new.png" alt="Instagram" style="border-radius:50%; height:60px;" />
+  </a>
+</p>
