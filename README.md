@@ -123,14 +123,14 @@ Dự án được xây dựng với mục đích hỗ trợ sinh viên cá nhân
 
 ## 👨‍💻 Tác giả
 **© 2025 - Võ Chí Cường**
-<p align="center">
+<p align="left">
   <a href="https://github.com/chiscungg0411" target="_blank">
-    <img src="https://img.icons8.com/?size=100&id=12598&format=png&color=ffffff" alt="GitHub" style="border-radius:50%; margin-right:10px; height:60px;" />
+    <img src="https://img.icons8.com/?size=100&id=12598&format=png&color=ffffff" alt="GitHub" style="height:60px;" />
   </a>
   <a href="https://facebook.com/ChiCuongDeyy" target="_blank">
-    <img src="https://img.icons8.com/?size=100&id=118468&format=png&color=0865FE" alt="Facebook" style="border-radius:50%; margin-right:10px; height:60px;" />
+    <img src="https://img.icons8.com/?size=100&id=118468&format=png&color=0865FE" alt="Facebook" style="height:60px;" />
   </a>
   <a href="https://instagram.com/vochicuong_" target="_blank">
-    <img src="https://img.icons8.com/ios/40/E4405F/instagram-new.png" alt="Instagram" style="border-radius:50%; height:60px;" />
+    <img src="https://img.icons8.com/ios/40/E4405F/instagram-new.png" alt="Instagram" style="height:60px;" />
   </a>
 </p>
