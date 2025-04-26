@@ -651,19 +651,14 @@ app.listen(PORT, async () => {
   }
 });
 
-bot.on('message', (msg) => {
-    const chatId = msg.chat.id;
-    const userId = msg.from.id;
-
-    if (!allowedUsers.includes(userId)) {
-      bot.sendMessage(chatId, "❌ Đây là bot riêng tư. Bạn không có quyền sử dụng.");
-      return;
-    }
-  });
-
 // Xử lý lệnh Telegram
 bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
+  const userId = msg.from.id;
+  if (!allowedUsers.includes(userId)) {
+    bot.sendMessage(chatId, "❌ Đây là bot riêng tư. Bạn không có quyền sử dụng.");
+    return;
+  }
   bot.sendMessage(
     chatId,
     "👋 Xin chào Chí Cường! Mình là Trợ lý 𝗩𝗛𝗨.\n" +
@@ -685,6 +680,11 @@ bot.onText(/\/start/, (msg) => {
 
 bot.onText(/\/thongtin/, async (msg) => {
   const chatId = msg.chat.id;
+  const userId = msg.from.id;
+  if (!allowedUsers.includes(userId)) {
+    bot.sendMessage(chatId, "❌ Đây là bot riêng tư. Bạn không có quyền sử dụng.");
+    return;
+  }
   bot.sendMessage(chatId, "📋 Đang lấy thông tin chi tiết, vui lòng chờ trong giây lát ⌛...");
   try {
     const { studentInfo, contactInfo, courseInfo, relativeInfo } = await getStudentInfo();
@@ -725,18 +725,20 @@ bot.onText(/\/thongtin/, async (msg) => {
         message += `👨‍👩‍👦 *${key}*: ${value}\n`;
       }
     }
-
-
+    
     bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
   } catch (error) {
     bot.sendMessage(chatId, `❌ *Lỗi lấy thông tin:* ${error.message}`);
   }
 });
 
-
-
 bot.onText(/\/tuannay/, async (msg) => {
   const chatId = msg.chat.id;
+  const userId = msg.from.id;
+  if (!allowedUsers.includes(userId)) {
+    bot.sendMessage(chatId, "❌ Đây là bot riêng tư. Bạn không có quyền sử dụng.");
+    return;
+  }
   bot.sendMessage(chatId, "📅 Đang lấy lịch học tuần này, vui lòng chờ trong giây lát ⌛...");
   try {
     const lichHoc = await getSchedule(0);
@@ -773,6 +775,11 @@ bot.onText(/\/tuannay/, async (msg) => {
 
 bot.onText(/\/tuansau/, async (msg) => {
   const chatId = msg.chat.id;
+  const userId = msg.from.id;
+  if (!allowedUsers.includes(userId)) {
+    bot.sendMessage(chatId, "❌ Đây là bot riêng tư. Bạn không có quyền sử dụng.");
+    return;
+  }
   bot.sendMessage(chatId, "📅 Đang lấy lịch học tuần sau, vui lòng chờ trong giây lát ⌛...");
   try {
     const lichHoc = await getSchedule(1);
@@ -809,6 +816,11 @@ bot.onText(/\/tuansau/, async (msg) => {
 
 bot.onText(/\/thongbao/, async (msg) => {
   const chatId = msg.chat.id;
+  const userId = msg.from.id;
+  if (!allowedUsers.includes(userId)) {
+    bot.sendMessage(chatId, "❌ Đây là bot riêng tư. Bạn không có quyền sử dụng.");
+    return;
+  }
   bot.sendMessage(chatId, "🔔 Đang lấy thông báo, vui lòng chờ trong giây lát ⌛...");
   try {
     const notifications = await getNotifications();
@@ -825,6 +837,11 @@ bot.onText(/\/thongbao/, async (msg) => {
 
 bot.onText(/\/congtac/, async (msg) => {
   const chatId = msg.chat.id;
+  const userId = msg.from.id;
+  if (!allowedUsers.includes(userId)) {
+    bot.sendMessage(chatId, "❌ Đây là bot riêng tư. Bạn không có quyền sử dụng.");
+    return;
+  }
   bot.sendMessage(chatId, "📋 Đang lấy danh sách công tác xã hội, vui lòng chờ trong giây lát ⌛...");
   try {
     const congTacData = await getSocialWork();
@@ -841,6 +858,11 @@ bot.onText(/\/congtac/, async (msg) => {
 
 bot.onText(/\/tinchi/, async (msg) => {
   const chatId = msg.chat.id;
+  const userId = msg.from.id;
+  if (!allowedUsers.includes(userId)) {
+    bot.sendMessage(chatId, "❌ Đây là bot riêng tư. Bạn không có quyền sử dụng.");
+    return;
+  }
   bot.sendMessage(chatId, "📊 Đang lấy tổng số tín chỉ và điểm TB, vui lòng chờ trong giây lát ⌛...");
   try {
     const { totalCredits, avgScore } = await getCredits();
@@ -856,6 +878,11 @@ bot.onText(/\/tinchi/, async (msg) => {
 
 bot.onText(/\/lichthi/, async (msg) => {
   const chatId = msg.chat.id;
+  const userId = msg.from.id;
+  if (!allowedUsers.includes(userId)) {
+    bot.sendMessage(chatId, "❌ Đây là bot riêng tư. Bạn không có quyền sử dụng.");
+    return;
+  }
   bot.sendMessage(chatId, "📝 Đang lấy lịch thi học kỳ này, vui lòng chờ trong giây lát ⌛...");
   try {
     const { exams, year, semester } = await getExamSchedule();
@@ -886,6 +913,11 @@ bot.onText(/\/lichthi/, async (msg) => {
 
 bot.onText(/\/taichinh/, async (msg) => {
   const chatId = msg.chat.id;
+  const userId = msg.from.id;
+  if (!allowedUsers.includes(userId)) {
+    bot.sendMessage(chatId, "❌ Đây là bot riêng tư. Bạn không có quyền sử dụng.");
+    return;
+  }
   bot.sendMessage(chatId, "💰 Đang lấy thông tin tài chính, vui lòng chờ trong giây lát ⌛...");
   try {
     const { mustPay, paid, debt } = await getAccountFees();
