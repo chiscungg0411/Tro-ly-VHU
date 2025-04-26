@@ -140,9 +140,11 @@ async function getStudentInfo() {
       const tables = document.querySelectorAll(".MuiTable-root");
       const studentInfo = {};
       const contactInfo = {};
+      const courseInfo = {};
+      const relativeInfo = {};
 
-      if (tables.length >= 2) {
-        // Lấy bảng Thông tin sinh viên
+      if (tables.length >= 4) {
+        // 1. Thông tin sinh viên
         const studentRows = tables[0].querySelectorAll("tbody tr");
         studentRows.forEach((row) => {
           const cells = row.querySelectorAll("td");
@@ -153,7 +155,7 @@ async function getStudentInfo() {
           }
         });
 
-        // Lấy bảng Thông tin liên lạc
+        // 2. Thông tin liên lạc
         const contactRows = tables[1].querySelectorAll("tbody tr");
         contactRows.forEach((row) => {
           const cells = row.querySelectorAll("td");
@@ -163,12 +165,34 @@ async function getStudentInfo() {
             if (value) contactInfo[key] = value;
           }
         });
+
+        // 3. Thông tin khóa học
+        const courseRows = tables[2].querySelectorAll("tbody tr");
+        courseRows.forEach((row) => {
+          const cells = row.querySelectorAll("td");
+          if (cells.length === 2) {
+            const key = cells[0].innerText.trim();
+            const value = cells[1].innerText.trim();
+            if (value) courseInfo[key] = value;
+          }
+        });
+
+        // 4. Thông tin người liên hệ
+        const relativeRows = tables[3].querySelectorAll("tbody tr");
+        relativeRows.forEach((row) => {
+          const cells = row.querySelectorAll("td");
+          if (cells.length === 2) {
+            const key = cells[0].innerText.trim();
+            const value = cells[1].innerText.trim();
+            if (value) relativeInfo[key] = value;
+          }
+        });
       }
 
-      return { studentInfo, contactInfo };
+      return { studentInfo, contactInfo, courseInfo, relativeInfo };
     });
 
-    console.log("✅ Đã lấy dữ liệu thông tin sinh viên và liên lạc.");
+    console.log("✅ Đã lấy đầy đủ thông tin 4 bảng.");
     return data;
   } catch (error) {
     console.error("❌ Lỗi trong getStudentInfo:", error.message);
@@ -614,7 +638,7 @@ bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
   bot.sendMessage(
     chatId,
-    "👋 Xin chào Chí Cường! Mình là Trợ lý 𝗩𝗛𝗨.\n" +
+    "👋 Xin chào *Chí Cường!* Mình là Trợ lý 𝗩𝗛𝗨.\n" +
       "⌨️ Các lệnh tương tác với trợ lý 𝗩𝗛𝗨 như sau:\n" +
       "------------------------------------\n" +
       "🤖 /𝘀𝘁𝗮𝗿𝘁 - Bắt đầu giao tiếp với Trợ lý 𝗩𝗛𝗨.\n" +
@@ -633,23 +657,50 @@ bot.onText(/\/start/, (msg) => {
 
 bot.onText(/\/thongtin/, async (msg) => {
   const chatId = msg.chat.id;
-  bot.sendMessage(chatId, "👤 Đang lấy thông tin sinh viên, vui lòng chờ trong giây lát ⌛...");
+  bot.sendMessage(chatId, "📋 Đang lấy thông tin chi tiết, vui lòng chờ trong giây lát ⌛...");
   try {
-    const { studentInfo, contactInfo } = await getStudentInfo();
+    const { studentInfo, contactInfo, courseInfo, relativeInfo } = await getStudentInfo();
 
-    let message = "👤 *Thông tin sinh viên:*\n------------------------------------\n";
-    for (const [key, value] of Object.entries(studentInfo)) {
-      message += `👤 *${key}*: ${value}\n`;
+    let message = "";
+
+    // 1. Thông tin sinh viên
+    if (Object.keys(studentInfo).length > 0) {
+      message += "👤 *Thông tin sinh viên:*\n------------------------------------\n";
+      for (const [key, value] of Object.entries(studentInfo)) {
+        message += `👤 *${key}*: ${value}\n`;
+      }
+      message += "\n";
     }
 
-    message += "\n📞 *Thông tin liên lạc:*\n------------------------------------\n";
-    for (const [key, value] of Object.entries(contactInfo)) {
-      message += `📞 *${key}*: ${value}\n`;
+    // 2. Thông tin liên lạc
+    if (Object.keys(contactInfo).length > 0) {
+      message += "☎️ *Thông tin liên lạc:*\n------------------------------------\n";
+      for (const [key, value] of Object.entries(contactInfo)) {
+        message += `☎️ *${key}*: ${value}\n`;
+      }
+      message += "\n";
+    }
+
+    // 3. Thông tin khóa học
+    if (Object.keys(courseInfo).length > 0) {
+      message += "🎓 *Thông tin khóa học:*\n------------------------------------\n";
+      for (const [key, value] of Object.entries(courseInfo)) {
+        message += `🎓 *${key}*: ${value}\n`;
+      }
+      message += "\n";
+    }
+
+    // 4. Thông tin người liên hệ
+    if (Object.keys(relativeInfo).length > 0) {
+      message += "👨‍👩‍👦 *Thông tin người liên hệ:*\n------------------------------------\n";
+      for (const [key, value] of Object.entries(relativeInfo)) {
+        message += `👨‍👩‍👦 *${key}*: ${value}\n`;
+      }
     }
 
     bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
   } catch (error) {
-    bot.sendMessage(chatId, `❌ Lỗi lấy thông tin: ${error.message}`);
+    bot.sendMessage(chatId, `❌ *Lỗi lấy thông tin:* ${error.message}`);
   }
 });
 
@@ -660,7 +711,7 @@ bot.onText(/\/tuannay/, async (msg) => {
   bot.sendMessage(chatId, "📅 Đang lấy lịch học tuần này, vui lòng chờ trong giây lát ⌛...");
   try {
     const lichHoc = await getSchedule(0);
-    let message = `📅 **Lịch học tuần này của bạn:**\n------------------------------------\n`;
+    let message = `📅 *Lịch học tuần này của bạn:*\n------------------------------------\n`;
     let hasSchedule = false;
 
     for (const [ngay, monHocs] of Object.entries(lichHoc.schedule)) {
@@ -668,12 +719,12 @@ bot.onText(/\/tuannay/, async (msg) => {
       if (monHocs.length) {
         hasSchedule = true;
         monHocs.forEach((m) => {
-          message += `📖 **Môn học: ${m.subject} – ${m.classCode}**\n` +
-                     `📅 **Tiết:** ${m.periods}\n` +
-                     `🕛 **Giờ bắt đầu:** ${m.startTime}\n` +
-                     `📍 **Phòng học:** ${m.room}\n` +
-                     `🧑‍🏫 **Giảng viên:** ${m.professor}\n` +
-                     `📧 **Email:** ${m.email}\n\n`;
+          message += `📖 *Môn học: ${m.subject} – ${m.classCode}*\n` +
+                     `📅 *Tiết:* ${m.periods}\n` +
+                     `🕛 *Giờ bắt đầu:* ${m.startTime}\n` +
+                     `📍 *Phòng học:* ${m.room}\n` +
+                     `🧑‍🏫 *Giảng viên:* ${m.professor}\n` +
+                     `📧 *Email:* ${m.email}\n\n`;
         });
       } else {
         message += "❌ Không có lịch\n";
@@ -682,7 +733,7 @@ bot.onText(/\/tuannay/, async (msg) => {
     }
 
     if (!hasSchedule) {
-      message = `📅 **Lịch học tuần này của bạn:**\n------------------------------------\n❌ Không có lịch học trong tuần này.`;
+      message = `📅 *Lịch học tuần này của bạn:*\n------------------------------------\n❌ *Không có lịch học trong tuần này.*`;
     }
 
     bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
@@ -696,7 +747,7 @@ bot.onText(/\/tuansau/, async (msg) => {
   bot.sendMessage(chatId, "📅 Đang lấy lịch học tuần sau, vui lòng chờ trong giây lát ⌛...");
   try {
     const lichHoc = await getSchedule(1);
-    let message = `📅 **Lịch học tuần sau của bạn:**\n------------------------------------\n`;
+    let message = `📅 *Lịch học tuần sau của bạn:*\n------------------------------------\n`;
     let hasSchedule = false;
 
     for (const [ngay, monHocs] of Object.entries(lichHoc.schedule)) {
@@ -704,12 +755,12 @@ bot.onText(/\/tuansau/, async (msg) => {
       if (monHocs.length) {
         hasSchedule = true;
         monHocs.forEach((m) => {
-          message += `📖 **Môn học: ${m.subject} – ${m.classCode}**\n` +
-                     `📅 **Tiết:** ${m.periods}\n` +
-                     `🕛 **Giờ bắt đầu:** ${m.startTime}\n` +
-                     `📍 **Phòng học:** ${m.room}\n` +
-                     `🧑‍🏫 **Giảng viên:** ${m.professor}\n` +
-                     `📧 **Email:** ${m.email}\n\n`;
+          message += `📖 *Môn học:* ${m.subject} – ${m.classCode}\n` +
+                     `📅 *Tiết:* ${m.periods}\n` +
+                     `🕛 *Giờ bắt đầu:* ${m.startTime}\n` +
+                     `📍 *Phòng học:* ${m.room}\n` +
+                     `🧑‍🏫 *Giảng viên:* ${m.professor}\n` +
+                     `📧 *Email:* ${m.email}\n\n`;
         });
       } else {
         message += "❌ Không có lịch\n";
@@ -718,7 +769,7 @@ bot.onText(/\/tuansau/, async (msg) => {
     }
 
     if (!hasSchedule) {
-      message = `📅 **Lịch học tuần sau**\n------------------------------------\n❌ Không có lịch học trong tuần sau.`;
+      message = `📅 *Lịch học tuần sau của bạn:*\n------------------------------------\n❌ *Không có lịch học trong tuần sau*.`;
     }
 
     bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
@@ -732,14 +783,14 @@ bot.onText(/\/thongbao/, async (msg) => {
   bot.sendMessage(chatId, "🔔 Đang lấy thông báo, vui lòng chờ trong giây lát ⌛...");
   try {
     const notifications = await getNotifications();
-    let message = "🔔 **Danh sách thông báo mới nhất:**\n------------------------------------\n";
+    let message = "🔔 *Danh sách thông báo mới nhất:*\n------------------------------------\n";
     notifications.slice(0, 5).forEach((n, i) => {
-      message += `📢 **${i + 1}. ${n.MessageSubject}**\n📩 ${n.SenderName}\n⏰ ${n.CreationDate}\n\n`;
+      message += `📢 *${i + 1}. ${n.MessageSubject}*\n📩 *${n.SenderName}*\n⏰ *${n.CreationDate}*\n\n`;
     });
     if (notifications.length > 5) message += `📢 Còn ${notifications.length - 5} thông báo khác. Hãy truy cập vào [Portal VHU](https://portal.vhu.edu.vn/login) để biết thêm thông tin chi tiết.`;
     bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
   } catch (error) {
-    bot.sendMessage(chatId, `❌ Lỗi lấy thông báo: ${error.message}`);
+    bot.sendMessage(chatId, `❌ *Lỗi lấy thông báo:* ${error.message}`);
   }
 });
 
@@ -748,14 +799,14 @@ bot.onText(/\/congtac/, async (msg) => {
   bot.sendMessage(chatId, "📋 Đang lấy danh sách công tác xã hội, vui lòng chờ trong giây lát ⌛...");
   try {
     const congTacData = await getSocialWork();
-    let message = "📋 **Danh sách công tác xã hội:**\n------------------------------------\n";
+    let message = "📋 *Danh sách công tác xã hội:*\n------------------------------------\n";
     congTacData.slice(0, 5).forEach((c, i) => {
-      message += `📌 **${c.Index}. ${c.Event}**\n📍 ${c.Location || "Chưa cập nhật"}\n👥 ${c.NumRegistered} người đăng ký\n⭐ ${c.Points} điểm\n🕛 ${c.StartTime} - ${c.EndTime}\n\n`;
+      message += `📌 *${c.Index}. ${c.Event}*\n📍 *${c.Location || "Chưa cập nhật"}*\n👥 *${c.NumRegistered} người đăng ký*\n⭐ *${c.Points} điểm*\n🕛 *${c.StartTime} - ${c.EndTime}*\n\n`;
     });
     if (congTacData.length > 5) message += `📢 Còn ${congTacData.length - 5} công tác khác. Hãy truy cập vào [Portal VHU](https://portal.vhu.edu.vn/login) để biết thêm thông tin chi tiết.`;
     bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
   } catch (error) {
-    bot.sendMessage(chatId, `❌ Lỗi lấy công tác xã hội: ${error.message}`);
+    bot.sendMessage(chatId, `❌ *Lỗi lấy công tác xã hội:* ${error.message}`);
   }
 });
 
@@ -764,13 +815,13 @@ bot.onText(/\/tinchi/, async (msg) => {
   bot.sendMessage(chatId, "📊 Đang lấy tổng số tín chỉ và điểm TB, vui lòng chờ trong giây lát ⌛...");
   try {
     const { totalCredits, avgScore } = await getCredits();
-    let message = `📊 **Tổng số tín chỉ và điểm trung bình của bạn:**\n------------------------------------\n`;
-    message += `🎓 Số tín chỉ đã đạt: **${totalCredits} tín chỉ**\n`;
-    message += `📈 Điểm TB chung (Hệ 10): **${avgScore}**\n`;
+    let message = `📊 *Tổng số tín chỉ và điểm trung bình của bạn:*\n------------------------------------\n`;
+    message += `🎓 *Số tín chỉ đã đạt:* ${totalCredits} tín chỉ\n`;
+    message += `📈 *Điểm TB chung (Hệ 10):* ${avgScore}\n`;
     message += `ℹ️ Hãy truy cập [Portal VHU](https://portal.vhu.edu.vn/) để biết thêm thông tin chi tiết.`;
     bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
   } catch (error) {
-    bot.sendMessage(chatId, `❌ Lỗi lấy dữ liệu: ${error.message}`);
+    bot.sendMessage(chatId, `❌ *Lỗi lấy dữ liệu:* ${error.message}`);
   }
 });
 
@@ -779,21 +830,21 @@ bot.onText(/\/lichthi/, async (msg) => {
   bot.sendMessage(chatId, "📝 Đang lấy lịch thi học kỳ này, vui lòng chờ trong giây lát ⌛...");
   try {
     const { exams, year, semester } = await getExamSchedule();
-    let message = `📝 **Lịch thi ${semester} - Năm học ${year}:**\n------------------------------------\n`;
+    let message = `📝 *Lịch thi ${semester} - Năm học ${year}:*\n------------------------------------\n`;
     let hasExams = false;
 
     if (exams.length === 0) {
-      message += "❌ Chưa có lịch thi nào có phòng thi và địa điểm được cập nhật.";
+      message += "❌ *Chưa có lịch thi nào có phòng thi và địa điểm được cập nhật.*";
     } else {
       exams.forEach((exam, index) => {
         hasExams = true;
-        message += `📚 **${index + 1}. ${exam.subject}**\n` +
-                   `🔢 Lần thi: ${exam.attempt}\n` +
-                   `📅 Ngày thi: ${exam.date}\n` +
-                   `⏰ Giờ thi: ${exam.time}\n` +
-                   `📍 Phòng thi: ${exam.room} (${exam.location})\n` +
-                   `✍️ Hình thức: ${exam.format}\n` +
-                   `🚫 Vắng thi: ${exam.absent}\n\n`;
+        message += `📚 *${index + 1}. ${exam.subject}*\n` +
+                   `🔢 *Lần thi:* ${exam.attempt}\n` +
+                   `📅 *Ngày thi:* ${exam.date}\n` +
+                   `⏰ *Giờ thi:* ${exam.time}\n` +
+                   `📍 *Phòng thi:* ${exam.room} (${exam.location})\n` +
+                   `✍️ *Hình thức:* ${exam.format}\n` +
+                   `🚫 *Vắng thi:* ${exam.absent}\n\n`;
       });
     }
 
@@ -812,10 +863,10 @@ bot.onText(/\/taichinh/, async (msg) => {
 
     const formatNumber = (num) => num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 
-    let message = `💵 **Thông tin tài chính của bạn:**\n------------------------------------\n`;
-    message += `💸 Học phí phải đóng: **${formatNumber(mustPay)} VNĐ**\n`;
-    message += `💲 Học phí đã đóng: **${formatNumber(paid)} VNĐ**\n`;
-    message += `👛 Học phí còn nợ: **${formatNumber(debt)} VNĐ**\n`;
+    let message = `💵 *Thông tin tài chính của bạn:*\n------------------------------------\n`;
+    message += `💸 *Học phí phải đóng:* ${formatNumber(mustPay)} VNĐ\n`;
+    message += `💲 *Học phí đã đóng:* ${formatNumber(paid)} VNĐ\n`;
+    message += `👛 *Học phí còn nợ:* ${formatNumber(debt)} VNĐ\n`;
     message += `ℹ️ Hãy truy cập [Portal VHU](https://portal.vhu.edu.vn/) để biết thêm thông tin chi tiết.`;
 
     bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
