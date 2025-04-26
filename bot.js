@@ -203,9 +203,7 @@ async function getStudentInfo() {
         }
       });
     });
-
-
-      }
+  }
 
       return { studentInfo, contactInfo, courseInfo, relativeInfo };
     });
@@ -710,7 +708,7 @@ bot.onText(/\/thongtin/, async (msg) => {
 
     // 4. Thông tin người liên hệ
     if (Object.keys(relativeInfo).length > 0) {
-      message += "👨‍👩‍👦 **Thông tin người liên hệ:**\n------------------------------------\n";
+      message += "👨‍👩‍👦 *Thông tin người liên hệ:*\n------------------------------------\n";
       for (const [key, value] of Object.entries(relativeInfo)) {
         message += `👨‍👩‍👦 *${key}*: ${value}\n`;
       }
@@ -734,7 +732,7 @@ bot.onText(/\/tuannay/, async (msg) => {
     let hasSchedule = false;
 
     for (const [ngay, monHocs] of Object.entries(lichHoc.schedule)) {
-      message += `📌 **${ngay}:**\n`;
+      message += `📌 *${ngay}:*\n`;
       if (monHocs.length) {
         hasSchedule = true;
         monHocs.forEach((m) => {
@@ -746,7 +744,7 @@ bot.onText(/\/tuannay/, async (msg) => {
                      `📧 *Email:* ${m.email}\n\n`;
         });
       } else {
-        message += "❌ Không có lịch\n";
+        message += "❌ *Không có lịch học*\n";
       }
       message += "\n";
     }
@@ -757,7 +755,7 @@ bot.onText(/\/tuannay/, async (msg) => {
 
     bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
   } catch (error) {
-    bot.sendMessage(chatId, `❌ Lỗi lấy lịch học: ${error.message}`);
+    bot.sendMessage(chatId, `❌ *Lỗi lấy lịch học:* ${error.message}`);
   }
 });
 
@@ -782,7 +780,7 @@ bot.onText(/\/tuansau/, async (msg) => {
                      `📧 *Email:* ${m.email}\n\n`;
         });
       } else {
-        message += "❌ Không có lịch\n";
+        message += "❌ *Không có lịch học*\n";
       }
       message += "\n";
     }
@@ -793,7 +791,7 @@ bot.onText(/\/tuansau/, async (msg) => {
 
     bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
   } catch (error) {
-    bot.sendMessage(chatId, `❌ Lỗi lấy lịch học: ${error.message}`);
+    bot.sendMessage(chatId, `❌ *Lỗi lấy lịch học:* ${error.message}`);
   }
 });
 
@@ -870,7 +868,7 @@ bot.onText(/\/lichthi/, async (msg) => {
     message += `ℹ️ Hãy truy cập [Portal VHU](https://portal.vhu.edu.vn/) để biết thêm thông tin chi tiết.`;
     bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
   } catch (error) {
-    bot.sendMessage(chatId, `❌ Lỗi lấy lịch thi: ${error.message}`);
+    bot.sendMessage(chatId, `❌ *Lỗi lấy lịch thi:* ${error.message}`);
   }
 });
 
@@ -890,7 +888,7 @@ bot.onText(/\/taichinh/, async (msg) => {
 
     bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
   } catch (error) {
-    bot.sendMessage(chatId, `❌ Lỗi lấy dữ liệu tài chính: ${error.message}`);
+    bot.sendMessage(chatId, `❌ *Lỗi lấy dữ liệu tài chính:* ${error.message}`);
   }
 });
 
