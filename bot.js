@@ -649,6 +649,18 @@ app.listen(PORT, async () => {
   }
 });
 
+bot.on('message', (msg) => {
+  console.log("📩 Nhận tin nhắn từ:", msg.from);
+
+  const chatId = msg.chat.id;
+  const userId = msg.from.id;
+
+  console.log(`🆔 User ID: ${userId}`);
+
+  // (Các xử lý khác của bot ở đây, ví dụ xử lý lệnh /thongtin, /tuannay, v.v...)
+});
+
+
 // Xử lý lệnh Telegram
 bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
@@ -802,7 +814,7 @@ bot.onText(/\/thongbao/, async (msg) => {
     const notifications = await getNotifications();
     let message = "🔔 *Danh sách thông báo mới nhất:*\n------------------------------------\n";
     notifications.slice(0, 5).forEach((n, i) => {
-      message += `📢 *Thông báo ${i + 1}. ${n.MessageSubject}*\n📩 *Người đăng:* ${n.SenderName}\n⏰ *Thời gian:* ${n.CreationDate}\n\n`;
+      message += `📢 *Thông báo ${i + 1}:* ${n.MessageSubject}\n📩 *Người đăng:* ${n.SenderName}\n⏰ *Thời gian:* ${n.CreationDate}\n\n`;
     });
     if (notifications.length > 5) message += `📢 Còn ${notifications.length - 5} thông báo khác. Hãy truy cập vào [Portal VHU](https://portal.vhu.edu.vn/login) để biết thêm thông tin chi tiết.`;
     bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
@@ -818,7 +830,7 @@ bot.onText(/\/congtac/, async (msg) => {
     const congTacData = await getSocialWork();
     let message = "📋 *Danh sách công tác xã hội:*\n------------------------------------\n";
     congTacData.slice(0, 5).forEach((c, i) => {
-      message += `📌 *Công tác ${c.Index}.* ${c.Event}\n📍 *Địa điểm: * ${c.Location || "Chưa cập nhật"}\n👥 *Số lượng: * ${c.NumRegistered} người đăng ký\n⭐ *Điểm rèn luyện: *${c.Points} điểm\n🕛 *Thời gian: *${c.StartTime} - ${c.EndTime}\n\n`;
+      message += `📌 *Công tác ${c.Index}:* ${c.Event}\n📍 *Địa điểm:* ${c.Location || "Chưa cập nhật"}\n👥 *Số lượng:* ${c.NumRegistered} người đăng ký\n⭐ *Điểm rèn luyện: *${c.Points} điểm\n🕛 *Thời gian: *${c.StartTime} - ${c.EndTime}\n\n`;
     });
     if (congTacData.length > 5) message += `📢 Còn ${congTacData.length - 5} công tác khác. Hãy truy cập vào [Portal VHU](https://portal.vhu.edu.vn/login) để biết thêm thông tin chi tiết.`;
     bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
@@ -833,8 +845,8 @@ bot.onText(/\/tinchi/, async (msg) => {
   try {
     const { totalCredits, avgScore } = await getCredits();
     let message = `📊 *Tổng số tín chỉ và điểm trung bình của bạn:*\n------------------------------------\n`;
-    message += `🎓 *Số tín chỉ đã đạt:* ${totalCredits} tín chỉ\n`;
-    message += `📈 *Điểm TB chung (Hệ 10):* ${avgScore}\n`;
+    message += `🎓 *Số tín chỉ đã đạt:* ${totalCredits} tín chỉ.\n`;
+    message += `📈 *Điểm TB chung (Hệ 10):* ${avgScore} điểm.\n`;
     message += `ℹ️ Hãy truy cập [Portal VHU](https://portal.vhu.edu.vn/) để biết thêm thông tin chi tiết.`;
     bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
   } catch (error) {
@@ -856,12 +868,12 @@ bot.onText(/\/lichthi/, async (msg) => {
       exams.forEach((exam, index) => {
         hasExams = true;
         message += `📚 *${index + 1}. ${exam.subject}*\n` +
-                   `🔢 *Lần thi:* ${exam.attempt}\n` +
-                   `📅 *Ngày thi:* ${exam.date}\n` +
-                   `⏰ *Giờ thi:* ${exam.time}\n` +
-                   `📍 *Phòng thi:* ${exam.room} (${exam.location})\n` +
-                   `✍️ *Hình thức:* ${exam.format}\n` +
-                   `🚫 *Vắng thi:* ${exam.absent}\n\n`;
+                   `🔢 *Lần thi:* ${exam.attempt}.\n` +
+                   `📅 *Ngày thi:* ${exam.date}.\n` +
+                   `⏰ *Giờ thi:* ${exam.time}.\n` +
+                   `📍 *Phòng thi:* ${exam.room} (${exam.location}).\n` +
+                   `✍️ *Hình thức:* ${exam.format}.\n` +
+                   `🚫 *Vắng thi:* ${exam.absent}.\n\n`;
       });
     }
 
