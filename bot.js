@@ -802,7 +802,7 @@ bot.onText(/\/thongbao/, async (msg) => {
     const notifications = await getNotifications();
     let message = "🔔 *Danh sách thông báo mới nhất:*\n------------------------------------\n";
     notifications.slice(0, 5).forEach((n, i) => {
-      message += `📢 *${i + 1}. ${n.MessageSubject}*\n📩 *${n.SenderName}*\n⏰ *${n.CreationDate}*\n\n`;
+      message += `📢 *Thông báo ${i + 1}. ${n.MessageSubject}*\n📩 *Người đăng:* ${n.SenderName}\n⏰ *Thời gian:* ${n.CreationDate}\n\n`;
     });
     if (notifications.length > 5) message += `📢 Còn ${notifications.length - 5} thông báo khác. Hãy truy cập vào [Portal VHU](https://portal.vhu.edu.vn/login) để biết thêm thông tin chi tiết.`;
     bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
@@ -818,7 +818,7 @@ bot.onText(/\/congtac/, async (msg) => {
     const congTacData = await getSocialWork();
     let message = "📋 *Danh sách công tác xã hội:*\n------------------------------------\n";
     congTacData.slice(0, 5).forEach((c, i) => {
-      message += `📌 *${c.Index}. ${c.Event}*\n📍 *${c.Location || "Chưa cập nhật"}*\n👥 *${c.NumRegistered} người đăng ký*\n⭐ *${c.Points} điểm*\n🕛 *${c.StartTime} - ${c.EndTime}*\n\n`;
+      message += `📌 *Công tác ${c.Index}.* ${c.Event}\n📍 *Địa điểm: * ${c.Location || "Chưa cập nhật"}\n👥 *Số lượng: * ${c.NumRegistered} người đăng ký\n⭐ *Điểm rèn luyện: *${c.Points} điểm\n🕛 *Thời gian: *${c.StartTime} - ${c.EndTime}\n\n`;
     });
     if (congTacData.length > 5) message += `📢 Còn ${congTacData.length - 5} công tác khác. Hãy truy cập vào [Portal VHU](https://portal.vhu.edu.vn/login) để biết thêm thông tin chi tiết.`;
     bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
