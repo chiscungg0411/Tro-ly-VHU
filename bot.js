@@ -914,13 +914,17 @@ bot.onText(/\/lichthi/, async (msg) => {
 bot.onText(/\/taichinh/, async (msg) => {
   const chatId = msg.chat.id;
   const userId = msg.from.id;
+
   if (!allowedUsers.includes(userId)) {
     bot.sendMessage(chatId, "❌ Đây là bot riêng tư. Bạn không có quyền sử dụng.");
     return;
   }
+
   bot.sendMessage(chatId, "💰 Đang lấy thông tin tài chính, vui lòng chờ trong giây lát ⌛...");
+
   try {
-    const { mustPay, paid, debt } = await getAccountFees();
+    const { mustPay, debt } = await getAccountFees();
+    const paid = mustPay - debt;
 
     const formatNumber = (num) => num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 
@@ -932,7 +936,7 @@ bot.onText(/\/taichinh/, async (msg) => {
 
     bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
   } catch (error) {
-    bot.sendMessage(chatId, `❌ *Lỗi lấy dữ liệu tài chính:* ${error.message}`);
+    bot.sendMessage(chatId, `❌ *Lỗi lấy dữ liệu tài chính:* ${error.message}`, { parse_mode: "Markdown" });
   }
 });
 
