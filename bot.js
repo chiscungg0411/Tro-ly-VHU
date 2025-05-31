@@ -554,6 +554,113 @@ async function getExamSchedule() {
   }
 }
 
+// Hàm lấy tiến độ học tập
+async function getStudyProgress() {
+  const browser = await launchBrowser();
+  const page = await browser.newPage();
+  try {
+    // 1. Đăng nhập
+    await login(page, process.env.VHU_EMAIL, process.env.VHU_PASSWORD);
+
+    // 2. Lấy danh sách tất cả môn học từ Chương trình đào tạo
+    console.log("📚 Lấy dữ liệu chương trình đào tạo...");
+    await page.goto("https://portal.vhu.edu.vn/student/studyprograms", {
+      waitUntil: "networkidle0",
+      timeout: 60000
+    });
+    await page.waitForSelector(".MuiTable-root", { timeout: 60000 });
+
+    const allSubjects = await page.evaluate(() => {
+      const subjects = [];
+      const rows = document.querySelectorAll(".MuiTable-root tbody tr");
+      rows.forEach(row => {
+        // Bỏ qua các hàng tiêu đề (có thuộc tính colspan)
+        if (row.cells.length > 5 && !row.querySelector('td[colspan]')) {
+          const code = row.cells[1]?.innerText.trim();
+          const name = row.cells[2]?.innerText.trim();
+          const credits = parseInt(row.cells[4]?.innerText.trim(), 10);
+          if (code && name && !isNaN(credits) && credits > 0) { // Chỉ lấy các môn có tín chỉ > 0
+            subjects.push({ code, name, credits });
+          }
+        }
+      });
+      return subjects;
+    });
+    console.log(`✅ Tìm thấy ${allSubjects.length} học phần trong chương trình đào tạo.`);
+
+    // 3. Lấy danh sách các môn đã đạt từ trang Kết quả học tập
+    console.log("📊 Lấy dữ liệu kết quả học tập...");
+    await page.goto("https://portal.vhu.edu.vn/student/marks", {
+      waitUntil: "networkidle0",
+      timeout: 60000
+    });
+    await page.waitForSelector(".MuiTableContainer-root", { timeout: 60000 });
+
+    const passedData = await page.evaluate(() => {
+        const passedCodes = new Set();
+        let totalCreditsEarned = 0;
+        
+        const tables = document.querySelectorAll(".MuiTableContainer-root table");
+        tables.forEach(table => {
+            // Lấy mã các môn đã đạt
+            const rows = table.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                // Giả định cấu trúc: STT, Mã HP, Tên HP, STC, ..., Kết quả
+                // Kiểm tra xem cột 'Kết quả' có nội dung là 'Đạt' không
+                if (cells.length > 5) { 
+                    const subjectCode = cells[1]?.innerText.trim();
+                    const result = cells[cells.length - 1]?.innerText.trim(); // Giả định cột cuối là kết quả
+                    if (result === 'Đạt' && subjectCode) {
+                        passedCodes.add(subjectCode);
+                    }
+                }
+            });
+
+            // Lấy tổng tín chỉ đã đạt
+            const strongTags = table.querySelectorAll("strong");
+            strongTags.forEach(tag => {
+                const text = tag.innerText;
+                const creditMatch = text.match(/Tổng STC đạt: (\d+)/);
+                if (creditMatch) {
+                    totalCreditsEarned = parseInt(creditMatch[1], 10);
+                    return;
+                }
+                const semesterCreditMatch = text.match(/STC Đạt Học Kỳ: (\d+(\.\d+)?)/);
+                 if (semesterCreditMatch) {
+                    totalCreditsEarned += parseFloat(semesterCreditMatch[1]);
+                }
+            });
+        });
+        
+        return {
+            passedCodes: Array.from(passedCodes),
+            totalCreditsEarned
+        };
+    });
+    console.log(`✅ Tìm thấy ${passedData.passedCodes.length} học phần đã đạt.`);
+    console.log(`✅ Tổng số tín chỉ đã đạt: ${passedData.totalCreditsEarned}.`);
+
+    // 4. So sánh để tìm ra các môn chưa hoàn thành
+    const passedCodesSet = new Set(passedData.passedCodes);
+    const uncompletedSubjects = allSubjects.filter(
+      subject => !passedCodesSet.has(subject.code)
+    );
+    console.log(`✅ Có ${uncompletedSubjects.length} học phần chưa hoàn thành.`);
+
+    return {
+      totalCreditsEarned: passedData.totalCreditsEarned,
+      uncompletedSubjects,
+    };
+
+  } catch (error) {
+    console.error("❌ Lỗi trong getStudyProgress:", error.message);
+    throw error;
+  } finally {
+    await browser.close();
+  }
+}
+
 // Hàm lấy thông tin tài chính
 async function getAccountFees() {
   const browser = await launchBrowser();
@@ -899,7 +1006,7 @@ bot.onText(/\/tinchi/, async (msg) => {
   try {
     const { totalCredits, avgScore } = await getCredits();
     let message = `📊 *Tổng số tín chỉ và điểm trung bình của bạn:*\n------------------------------------\n`;
-    message += `🎓 *Số tín chỉ đã đạt:* ${totalCredits} tín chỉ.\n`;
+    message += `🎓 *Số tín chỉ đã đạt:* ${totalCredits}/134 tín chỉ.\n`;
     message += `📈 *Điểm TB chung (Hệ 10):* ${avgScore} điểm.\n`;
     message += `ℹ️ Hãy truy cập [Portal VHU](https://portal.vhu.edu.vn/) để biết thêm thông tin chi tiết.`;
     bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
@@ -940,6 +1047,46 @@ bot.onText(/\/lichthi/, async (msg) => {
     bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
   } catch (error) {
     bot.sendMessage(chatId, `❌ *Lỗi lấy lịch thi:* ${error.message}`);
+  }
+});
+
+bot.onText(/\/tiendo/, async (msg) => {
+  const chatId = msg.chat.id;
+  const userId = msg.from.id;
+
+  if (!allowedUsers.includes(userId)) {
+    bot.sendMessage(chatId, "❌ Đây là bot riêng tư. Bạn không có quyền sử dụng.");
+    return;
+  }
+
+  bot.sendMessage(chatId, "🚀 Đang phân tích tiến độ học tập của bạn, vui lòng chờ trong giây lát ⌛...");
+
+  try {
+    const { totalCreditsEarned, uncompletedSubjects } = await getStudyProgress();
+
+    let message = `📊 *Báo cáo tiến độ học tập của bạn:*\n------------------------------------\n`;
+    message += `✅ *Tổng số tín chỉ đã tích lũy:* ${totalCreditsEarned}\n\n`;
+    
+    if (uncompletedSubjects.length === 0) {
+      message += "🎉 *Chúc mừng! Bạn đã hoàn thành tất cả các môn học trong chương trình đào tạo!*";
+    } else {
+      let totalUncompletedCredits = 0;
+      let uncompletedMessage = "";
+      uncompletedSubjects.forEach(subject => {
+        uncompletedMessage += `• *${subject.name}* (${subject.code}) - *${subject.credits} TC*\n`;
+        totalUncompletedCredits += subject.credits;
+      });
+
+      message += `📚 *Các môn học cần hoàn thành (${totalUncompletedCredits} TC):*\n------------------------------------\n`;
+      message += uncompletedMessage;
+    }
+    
+    message += `\n\nℹ️ Hãy truy cập [Portal VHU](https://portal.vhu.edu.vn/) để biết thêm thông tin chi tiết.`;
+
+    bot.sendMessage(chatId, message, { parse_mode: "Markdown", disable_web_page_preview: true });
+  } catch (error) {
+    console.error("Lỗi khi xử lý /tiendo:", error);
+    bot.sendMessage(chatId, `❌ *Lỗi lấy tiến độ học tập:* ${error.message}\n\nHãy chắc chắn rằng trang kết quả học tập và chương trình đào tạo đang có thể truy cập.`, { parse_mode: "Markdown" });
   }
 });
 
