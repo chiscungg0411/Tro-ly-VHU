@@ -842,7 +842,7 @@ bot.onText(/\/congtac/, async (msg) => {
     bot.sendMessage(chatId, "❌ Đây là bot riêng tư. Bạn không có quyền sử dụng.");
     return;
   }
-  bot.sendMessage(chatId, "📋 Đang lấy và sắp xếp danh sách công tác xã hội, vui lòng chờ trong giây lát ⌛...");
+  bot.sendMessage(chatId, "📋 Đang lấy danh sách công tác xã hội, vui lòng chờ trong giây lát ⌛...");
   try {
     const congTacData = await getSocialWork();
     const parseDate = (dateString) => {
