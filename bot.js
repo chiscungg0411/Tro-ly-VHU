@@ -842,14 +842,46 @@ bot.onText(/\/congtac/, async (msg) => {
     bot.sendMessage(chatId, "❌ Đây là bot riêng tư. Bạn không có quyền sử dụng.");
     return;
   }
-  bot.sendMessage(chatId, "📋 Đang lấy danh sách công tác xã hội, vui lòng chờ trong giây lát ⌛...");
+  bot.sendMessage(chatId, "📋 Đang lấy và sắp xếp danh sách công tác xã hội, vui lòng chờ trong giây lát ⌛...");
   try {
     const congTacData = await getSocialWork();
+    const parseDate = (dateString) => {
+      if (!dateString || dateString === "Không rõ") return null;
+      const parts = dateString.split(" ");
+      const datePart = parts.length > 1 ? parts[1] : parts[0];
+      const [day, month, year] = datePart.split("/").map(Number);
+      
+      if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+        return new Date(year, month - 1, day);
+      }
+      return null;
+    };
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const sortedData = congTacData
+      .map(c => ({ ...c, dateObject: parseDate(c.StartTime) })) 
+      .filter(c => c.dateObject && c.dateObject >= today)      
+      .sort((a, b) => a.dateObject - b.dateObject);             
+
     let message = "📋 *Danh sách công tác xã hội:*\n------------------------------------\n";
-    congTacData.slice(0, 5).forEach((c, i) => {
-      message += `📌 *Công tác ${c.Index}:* ${c.Event}\n📍 *Địa điểm:* ${c.Location || "Chưa cập nhật"}\n👥 *Số lượng:* ${c.NumRegistered} người đăng ký\n⭐ *Điểm rèn luyện: *${c.Points} điểm\n🕛 *Thời gian: *${c.StartTime} - ${c.EndTime}\n\n`;
-    });
-    if (congTacData.length > 5) message += `📢 Còn ${congTacData.length - 5} công tác khác. Hãy truy cập vào [Portal VHU](https://portal.vhu.edu.vn/login) để biết thêm thông tin chi tiết.`;
+    
+    if (sortedData.length === 0) {
+      message += "❌ *Không có hoạt động công tác xã hội nào sắp diễn ra.*";
+    } else {
+      sortedData.slice(0, 5).forEach((c) => {
+        message += `📌 *Công tác ${c.Index}:* ${c.Event}\n`
+                + `📍 *Địa điểm:* ${c.Location || "Chưa cập nhật"}\n`
+                + `👥 *Số lượng:* ${c.NumRegistered} người đăng ký\n`
+                + `⭐ *Điểm rèn luyện:* ${c.Points} điểm\n`
+                + `🕛 *Thời gian:* ${c.StartTime} - ${c.EndTime}\n\n`;
+      });
+      if (sortedData.length > 5) {
+        message += `📢 Còn ${sortedData.length - 5} công tác khác. Hãy truy cập vào [Portal VHU](https://portal.vhu.edu.vn/login) để biết thêm thông tin chi tiết.`;
+      }
+    }
+
     bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
   } catch (error) {
     bot.sendMessage(chatId, `❌ *Lỗi lấy công tác xã hội:* ${error.message}`);
